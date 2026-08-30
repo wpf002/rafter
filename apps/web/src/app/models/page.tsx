@@ -229,16 +229,16 @@ export default function ModelsPage() {
           return (
             <section className="section" key={model.id}>
               <div className="card card-pad">
-                <div className="card-head">
-                  <div>
-                    <h2>{model.name}</h2>
+                <div className="card-head" style={{ flexWrap: 'nowrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <h2 style={{ whiteSpace: 'nowrap' }}>{model.name}</h2>
                     {latest !== undefined && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                      <>
                         <span className="in-use-badge">In Use</span>
-                        <span className="quote-meta">
-                          Version {latest.version} · Created {fmtDate(latest.createdAt)}
+                        <span className="quote-meta" style={{ whiteSpace: 'nowrap' }}>
+                          v{latest.version} · {fmtDate(latest.createdAt)}
                         </span>
-                      </div>
+                      </>
                     )}
                   </div>
                   {latest !== undefined && (
