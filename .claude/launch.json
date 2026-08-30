@@ -9,7 +9,7 @@
         "@rafter/web",
         "dev"
       ],
-      "port": 3100,
+      "port": 3200,
       "autoPort": false
     }
   ]
