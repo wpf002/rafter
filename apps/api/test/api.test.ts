@@ -1,12 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import type {
+  BenchmarkResponse,
   JobDetail,
   JobSummary,
   MeasurementInput,
   PriceModel,
+  PriceModelVersion,
   Quote,
+  StratumResult,
   TenantSummary,
+  TuningResponse,
 } from '@rafter/types';
 
 /** Integration suite — skips entirely without DATABASE_URL (see CLAUDE.md). */
@@ -24,6 +28,7 @@ const MEASUREMENT: MeasurementInput = {
   flashingLf: 24,
   penetrations: 7,
   existingLayers: 1,
+  roofAgeYears: 17,
   deckingCondition: 'GOOD',
 };
 
@@ -35,6 +40,11 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
   let jobId: string;
   let quote: Quote;
   let photoId: string;
+  let summitId: string;
+  let lowCompletionId: string;
+  let standardModel: PriceModel;
+  let tuningBefore: TuningResponse;
+  let acceptedVersionId: string | undefined;
 
   const inject = (opts: {
     method: 'GET' | 'POST';
@@ -77,6 +87,9 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
         await tx.event.deleteMany({ where: { jobId } });
         await tx.job.delete({ where: { id: jobId } });
       });
+    }
+    if (db && acceptedVersionId) {
+      await db.prisma.priceModelVersion.delete({ where: { id: acceptedVersionId } });
     }
     if (app) await app.close();
     if (db) await db.prisma.$disconnect();
@@ -137,6 +150,7 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
     const m = res.json();
     expect(m.source).toBe('MANUAL');
     expect(m.roofAreaSqFt).toBe(MEASUREMENT.roofAreaSqFt);
+    expect(m.roofAgeYears).toBe(17);
   });
 
   it('issues a quote whose line items sum exactly to the total, all with factors', async () => {
@@ -296,6 +310,7 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
     expect(detail.variance!.varianceCents).toBe('50000');
     expect(detail.variance!.byReason.CONCEALED_CONDITION).toBe('30000');
     expect(detail.photos.length).toBe(1);
+    expect(detail.measurement!.roofAgeYears).toBe(17);
   });
 
   it('serves dashboard metrics and ingest drafts', async () => {
@@ -315,5 +330,157 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
       { description: 'Architectural shingles', category: 'MATERIAL', amountCents: '123456' },
       { description: 'Labor crew', category: 'LABOR', amountCents: '50000' },
     ]);
+  });
+
+  /* ---------------- Phase 5 — auto-tune ---------------- */
+
+  it('tuning 404s for a model belonging to another tenant', async () => {
+    const tenantsRes = await app.inject({ method: 'GET', url: '/api/tenants' });
+    const list = tenantsRes.json() as TenantSummary[];
+    summitId = list.find((t) => t.name === 'Summit Roofing')!.id;
+    lowCompletionId = list.find((t) => t.name === 'Blue Ridge Exteriors')!.id;
+
+    const modelsRes = await inject({
+      method: 'GET',
+      url: '/api/price-models',
+      tenant: summitId,
+    });
+    const models = modelsRes.json() as PriceModel[];
+    standardModel = models.find((m) => m.name === 'Standard Asphalt')!;
+    expect(standardModel).toBeDefined();
+
+    const wrongTenant = await inject({
+      method: 'GET',
+      url: `/api/price-models/${standardModel.id}/tuning`,
+      tenant: lowCompletionId,
+    });
+    expect(wrongTenant.statusCode).toBe(404);
+  });
+
+  it('computes a tuning report whose replay deltas are exact bigint differences', async () => {
+    const res = await inject({
+      method: 'GET',
+      url: `/api/price-models/${standardModel.id}/tuning`,
+      tenant: summitId,
+    });
+    expect(res.statusCode).toBe(200);
+    tuningBefore = res.json() as TuningResponse;
+
+    expect(tuningBefore.modelId).toBe(standardModel.id);
+    expect(tuningBefore.baseVersionId).toBe(standardModel.currentVersion!.id);
+    expect(tuningBefore.baseVersion).toBe(standardModel.currentVersion!.version);
+    expect(tuningBefore.report.jobCount).toBeGreaterThan(0);
+    expect(tuningBefore.report.rows.length).toBeGreaterThan(0);
+    for (const row of tuningBefore.report.rows) {
+      expect(typeof row.currentRateCents).toBe('string');
+      expect(typeof row.suggestedRateCents).toBe('string');
+      expect(BigInt(row.suggestedRateCents)).toBeGreaterThanOrEqual(0n);
+    }
+    // Seeded underpricing on Summit's Standard Asphalt must surface a change.
+    expect(
+      tuningBefore.report.rows.some((r) => r.suggestedRateCents !== r.currentRateCents),
+    ).toBe(true);
+
+    expect(tuningBefore.replay.length).toBeGreaterThan(0);
+    for (const r of tuningBefore.replay) {
+      expect(BigInt(r.deltaCents)).toBe(BigInt(r.newTotalCents) - BigInt(r.oldTotalCents));
+    }
+  });
+
+  it('rejects accepting suggestions against a stale base version with 409', async () => {
+    const res = await inject({
+      method: 'POST',
+      url: `/api/price-models/${standardModel.id}/tuning/accept`,
+      payload: { baseVersionId: 'stale-version-id' },
+      tenant: summitId,
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toContain('refresh');
+  });
+
+  it('accepts suggestions into a NEW immutable version and bumps the base', async () => {
+    const res = await inject({
+      method: 'POST',
+      url: `/api/price-models/${standardModel.id}/tuning/accept`,
+      payload: { baseVersionId: tuningBefore.baseVersionId },
+      tenant: summitId,
+    });
+    expect(res.statusCode).toBe(201);
+    const version = res.json() as PriceModelVersion;
+    expect(version.priceModelId).toBe(standardModel.id);
+    expect(version.version).toBe(tuningBefore.baseVersion + 1);
+    acceptedVersionId = version.id;
+
+    const reGet = await inject({
+      method: 'GET',
+      url: `/api/price-models/${standardModel.id}/tuning`,
+      tenant: summitId,
+    });
+    const after = reGet.json() as TuningResponse;
+    expect(after.baseVersionId).toBe(version.id);
+    expect(after.baseVersion).toBe(tuningBefore.baseVersion + 1);
+  });
+
+  /* ---------------- Phase 6 — pooled benchmark ---------------- */
+
+  it('unlocks the aggregate-only benchmark for the gate-open tenant', async () => {
+    const res = await inject({ method: 'GET', url: '/api/benchmark', tenant: summitId });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as BenchmarkResponse;
+    expect(body.unlocked).toBe(true);
+    expect(body.completionBps).toBeGreaterThanOrEqual(8000);
+    expect(body.report).not.toBeNull();
+    expect(body.report!.overall.locked).toBe(false);
+
+    const strata: StratumResult[] = [
+      body.report!.overall,
+      ...body.report!.bySquares,
+      ...body.report!.byPitch,
+      ...body.report!.byLayers,
+      ...body.report!.byRoofAge,
+    ];
+    for (const s of strata) {
+      if (s.locked) {
+        expect(s.p50Bps).toBeNull();
+        expect(s.p90Bps).toBeNull();
+        expect(s.p95Bps).toBeNull();
+      } else {
+        expect(s.jobs).toBeGreaterThanOrEqual(20);
+        expect(s.tenants).toBeGreaterThanOrEqual(3);
+      }
+    }
+
+    // D10 — no raw tenant id (any tenant's) may appear anywhere in the payload.
+    const tenantsRes = await app.inject({ method: 'GET', url: '/api/tenants' });
+    for (const t of tenantsRes.json() as TenantSummary[]) {
+      expect(res.body).not.toContain(t.id);
+    }
+
+    // Dashboard panel and benchmark endpoint share benchmark.gate — must agree.
+    const dash = await inject({ method: 'GET', url: '/api/dashboard', tenant: summitId });
+    expect(dash.json().benchmarkUnlocked).toBe(true);
+    expect(dash.json().closeoutCompletionBps).toBe(body.completionBps);
+  });
+
+  it('keeps the benchmark locked for a low-completion tenant', async () => {
+    const res = await inject({
+      method: 'GET',
+      url: '/api/benchmark',
+      tenant: lowCompletionId,
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as BenchmarkResponse;
+    expect(body.unlocked).toBe(false);
+    expect(body.completionBps).toBeLessThan(8000);
+    expect(body.remainingCount).toBeGreaterThan(0);
+    expect(body.report).toBeNull();
+
+    const dash = await inject({
+      method: 'GET',
+      url: '/api/dashboard',
+      tenant: lowCompletionId,
+    });
+    expect(dash.json().benchmarkUnlocked).toBe(false);
+    expect(dash.json().closeoutCompletionBps).toBe(body.completionBps);
   });
 });

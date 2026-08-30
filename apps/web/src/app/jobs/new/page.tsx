@@ -164,6 +164,7 @@ function MeasurementStep({
     flashingLf: '0',
     penetrations: '0',
     existingLayers: '1',
+    roofAgeYears: '',
     deckingCondition: 'UNKNOWN',
   });
 
@@ -190,7 +191,14 @@ function MeasurementStep({
       setError('All measurement figures must be whole numbers.');
       return;
     }
-    const parsed = MeasurementInput.safeParse({ ...ints, deckingCondition: m.deckingCondition });
+    // Roof age is optional — blank means unknown (null). Not money; a plain count.
+    const ageRaw = m.roofAgeYears.trim();
+    const roofAgeYears = ageRaw === '' ? null : parseCount(ageRaw);
+    if (ageRaw !== '' && roofAgeYears === null) {
+      setError('Roof age must be a whole number of years, or left blank.');
+      return;
+    }
+    const parsed = MeasurementInput.safeParse({ ...ints, roofAgeYears, deckingCondition: m.deckingCondition });
     if (!parsed.success) {
       setError(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' · '));
       return;
@@ -280,6 +288,12 @@ function MeasurementStep({
                 </option>
               ))}
             </SelectField>
+            <SuffixField
+              label="Roof age (optional)"
+              suffix="yrs"
+              value={m.roofAgeYears}
+              onChange={set('roofAgeYears')}
+            />
           </div>
           <div className="field" style={{ marginTop: 14 }}>
             <span className="field-label">Decking condition</span>
@@ -318,7 +332,8 @@ function MeasurementStep({
             />
           </div>
           <p className="muted" style={{ fontSize: 12, margin: '0 0 12px' }}>
-            The aerial provider returns a full measurement for this address (stub provider in v1).
+            The aerial provider returns a full measurement for this address (stub provider in v1). Any roof age it
+            reports is attached with the measurement and shown on the job.
           </p>
           <button type="button" className="btn btn-copper" disabled={busy} onClick={() => void fetchAerial()}>
             {busy ? 'Fetching…' : 'Fetch aerial measurement'}

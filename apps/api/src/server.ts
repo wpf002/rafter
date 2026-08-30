@@ -12,6 +12,8 @@ import { photoRoutes } from './routes/photos';
 import { closeoutRoutes } from './routes/closeouts';
 import { priceModelRoutes } from './routes/priceModels';
 import { ingestRoutes } from './routes/ingest';
+import { tuningRoutes } from './routes/tuning';
+import { benchmarkRoutes } from './routes/benchmark';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -98,6 +100,8 @@ export function buildServer(): FastifyInstance {
   void app.register(closeoutRoutes);
   void app.register(priceModelRoutes);
   void app.register(ingestRoutes);
+  void app.register(tuningRoutes);
+  void app.register(benchmarkRoutes);
 
   return app;
 }

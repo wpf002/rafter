@@ -157,6 +157,9 @@ export const ROUTES = {
   listModels: 'GET /api/price-models',
   createModelVersion: 'POST /api/price-models/:id/versions',
   ingestInvoice: 'POST /api/ingest/invoice',
+  tuning: 'GET /api/price-models/:id/tuning',
+  acceptTuning: 'POST /api/price-models/:id/tuning/accept',
+  benchmark: 'GET /api/benchmark',
 } as const;
 
 export type {

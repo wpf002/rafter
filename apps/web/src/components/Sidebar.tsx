@@ -8,6 +8,7 @@ const NAV = [
   { href: '/', label: 'Dashboard' },
   { href: '/jobs', label: 'Jobs' },
   { href: '/models', label: 'Price Models' },
+  { href: '/benchmark', label: 'Benchmark' },
 ];
 
 export function Sidebar() {

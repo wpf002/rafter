@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { formatBps, type DashboardResponse } from '@rafter/types';
 import { Chip, Skeleton } from './ui';
 
@@ -8,7 +9,7 @@ const C = 2 * Math.PI * R;
 
 export function BenchmarkPanel({ dash, loading }: { dash: DashboardResponse | null; loading: boolean }) {
   return (
-    <div className="card bench">
+    <Link href="/benchmark" className="card bench bench-link">
       <span className="section-label">Pooled benchmark</span>
       {loading || dash === null ? (
         <div style={{ marginTop: 14 }}>
@@ -19,7 +20,7 @@ export function BenchmarkPanel({ dash, loading }: { dash: DashboardResponse | nu
       ) : (
         <Locked bps={dash.closeoutCompletionBps} />
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -45,7 +46,7 @@ function Locked({ bps }: { bps: number }) {
         </text>
       </svg>
       <p className="bench-text">Pooled benchmark unlocks at 80% closeout completion.</p>
-      <p className="bench-pct">You are at {formatBps(bps)}</p>
+      <p className="bench-pct">You are at {formatBps(bps)} →</p>
     </div>
   );
 }
@@ -70,7 +71,7 @@ function Unlocked() {
         </div>
       ))}
       <p className="bench-text" style={{ textAlign: 'left', marginTop: 10 }}>
-        Coming soon.
+        Open the full benchmark →
       </p>
     </div>
   );

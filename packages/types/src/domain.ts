@@ -48,6 +48,8 @@ export const MeasurementInput = z.object({
   flashingLf: z.number().int().min(0),
   penetrations: z.number().int().min(0),
   existingLayers: z.number().int().min(1).max(4),
+  /** Age of the existing roof, when known. Feeds Phase 6 stratification. */
+  roofAgeYears: z.number().int().min(0).max(120).nullable().optional().default(null),
   deckingCondition: z.enum(['UNKNOWN', 'GOOD', 'SUSPECT']).default('UNKNOWN'),
 });
 export type MeasurementInput = z.infer<typeof MeasurementInput>;

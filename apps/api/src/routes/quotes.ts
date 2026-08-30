@@ -62,6 +62,7 @@ export function quoteRoutes(app: FastifyInstance): void {
       flashingLf: graph.measurement.flashingLf,
       penetrations: graph.measurement.penetrations,
       existingLayers: graph.measurement.existingLayers,
+      roofAgeYears: graph.measurement.roofAgeYears,
       deckingCondition: graph.measurement.deckingCondition,
     };
     const computation = computeQuote(

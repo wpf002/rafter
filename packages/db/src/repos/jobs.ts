@@ -136,6 +136,7 @@ export const jobs = {
             flashingLf: j.measurement.flashingLf,
             penetrations: j.measurement.penetrations,
             existingLayers: j.measurement.existingLayers,
+            roofAgeYears: j.measurement.roofAgeYears,
             deckingCondition: j.measurement.deckingCondition as Measurement['deckingCondition'],
           }
         : null,

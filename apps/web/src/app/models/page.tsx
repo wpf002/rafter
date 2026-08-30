@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import {
   formatBps,
@@ -59,16 +60,21 @@ export default function ModelsPage() {
                 <div className="card-head">
                   <h2>{model.name}</h2>
                   {latest !== undefined && (
-                    <button
-                      type="button"
-                      className="btn btn-copper btn-small"
-                      onClick={() => {
-                        setSaved(null);
-                        setEditing(editing === model.id ? null : model.id);
-                      }}
-                    >
-                      {editing === model.id ? 'Close editor' : 'New version'}
-                    </button>
+                    <div className="head-actions">
+                      <Link href={`/models/${model.id}/tuning`} className="btn btn-small">
+                        Auto-tune
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn btn-copper btn-small"
+                        onClick={() => {
+                          setSaved(null);
+                          setEditing(editing === model.id ? null : model.id);
+                        }}
+                      >
+                        {editing === model.id ? 'Close editor' : 'New version'}
+                      </button>
+                    </div>
                   )}
                 </div>
                 <table className="table">

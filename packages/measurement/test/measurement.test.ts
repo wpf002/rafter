@@ -20,6 +20,7 @@ const valid: MeasurementInput = {
   flashingLf: 30,
   penetrations: 10,
   existingLayers: 1,
+  roofAgeYears: 12,
   deckingCondition: 'UNKNOWN',
 };
 
@@ -131,8 +132,14 @@ describe('StubAerialProvider', () => {
       expect(f.facets).toBeGreaterThanOrEqual(4);
       expect(f.facets).toBeLessThanOrEqual(28);
       expect(f.existingLayers === 1 || f.existingLayers === 2).toBe(true);
+      if (f.roofAgeYears !== null) {
+        expect(f.roofAgeYears).toBeGreaterThanOrEqual(6);
+        expect(f.roofAgeYears).toBeLessThanOrEqual(38);
+      }
     }
     expect(new Set(AERIAL_FIXTURES.map((f) => f.roofAreaSqFt)).size).toBe(8);
+    // roofAgeYears is sometimes unknown — exactly one null fixture.
+    expect(AERIAL_FIXTURES.filter((f) => f.roofAgeYears === null)).toHaveLength(1);
   });
 });
 

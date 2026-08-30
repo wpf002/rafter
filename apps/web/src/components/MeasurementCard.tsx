@@ -23,6 +23,7 @@ export function MeasurementCard({ measurement }: { measurement: Measurement }) {
     ['Flashing', `${m.flashingLf.toLocaleString('en-US')} lf`],
     ['Penetrations', String(m.penetrations)],
     ['Layers', String(m.existingLayers)],
+    ['Roof age', m.roofAgeYears !== null ? `${m.roofAgeYears} yrs` : '—'],
   ];
 
   return (

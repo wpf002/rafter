@@ -95,6 +95,7 @@ model Measurement {
   flashingLf       Int
   penetrations     Int
   existingLayers   Int
+  roofAgeYears     Int?
   deckingCondition String
 
   @@index([tenantId])

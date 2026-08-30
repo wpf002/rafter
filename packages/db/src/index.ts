@@ -7,6 +7,9 @@ export { closeouts } from './repos/closeouts';
 export { priceModels } from './repos/priceModels';
 export { photos } from './repos/photos';
 export { dashboard } from './repos/dashboard';
+export { tuning } from './repos/tuning';
+export { benchmark } from './repos/benchmark';
+export { MATERIAL_PRICE_INDEX, getIndexBps } from './material-index';
 export {
   runSeed,
   wipeAll,

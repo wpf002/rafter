@@ -59,6 +59,7 @@ export function defaultMeasurement(overrides: Partial<MeasurementInput> = {}): M
     flashingLf: 30,
     penetrations: 7,
     existingLayers: 1,
+    roofAgeYears: null,
     deckingCondition: 'UNKNOWN',
     ...overrides,
   };

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   ApiError,
+  BenchmarkResponse,
   DashboardResponse,
   IngestDraftResponse,
   JobDetail,
@@ -11,6 +12,8 @@ import {
   QuoteComputation,
   Quote,
   TenantSummary,
+  TuningResponse,
+  type AcceptTuningRequest,
   type AttachMeasurementRequest,
   type CreateJobRequest,
   type CreateModelVersionRequest,
@@ -76,6 +79,9 @@ const post = <T>(path: string, body: unknown, schema: Schema<T>) => request('POS
 
 const CreatedId = z.object({ id: z.string() }).passthrough();
 
+/** Accept-tuning returns the new immutable model version (D3). */
+const AcceptedVersion = z.object({ id: z.string(), version: z.number().int() }).passthrough();
+
 export const api = {
   tenants: () => get('/api/tenants', z.array(TenantSummary)),
   dashboard: () => get('/api/dashboard', DashboardResponse),
@@ -94,6 +100,10 @@ export const api = {
   createModelVersion: (modelId: string, body: CreateModelVersionRequest) =>
     post(`/api/price-models/${modelId}/versions`, body, PriceModelVersion),
   ingestInvoice: (text: string) => post('/api/ingest/invoice', { text }, IngestDraftResponse),
+  tuning: (modelId: string) => get(`/api/price-models/${modelId}/tuning`, TuningResponse),
+  acceptTuning: (modelId: string, body: AcceptTuningRequest) =>
+    post(`/api/price-models/${modelId}/tuning/accept`, body, AcceptedVersion),
+  benchmark: () => get('/api/benchmark', BenchmarkResponse),
 };
 
 export function errorMessage(err: unknown): string {

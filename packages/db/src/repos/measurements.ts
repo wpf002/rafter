@@ -37,6 +37,7 @@ export const measurements = {
       flashingLf: m.flashingLf,
       penetrations: m.penetrations,
       existingLayers: m.existingLayers,
+      roofAgeYears: m.roofAgeYears,
       deckingCondition: m.deckingCondition as Measurement['deckingCondition'],
     };
   },
