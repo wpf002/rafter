@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { formatBps, formatMoney, toMoney, type JobState, type JobSummary } from '@rafter/types';
-import { BenchmarkPanel } from '@/components/BenchmarkPanel';
 import { Banner, DeltaChip, EmptyState, MetricCard, PageHead, Skeleton, STATE_LABEL } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
@@ -136,9 +135,6 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
-        <div className="bench-strip">
-          <BenchmarkPanel dash={d} loading={dash.loading} />
-        </div>
       </div>
     </>
   );

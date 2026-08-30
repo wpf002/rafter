@@ -808,6 +808,75 @@ a:hover {
   font-size: 15px;
 }
 
+
+/* Two pricing models side by side. */
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.models-grid .section {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+/* Compare page: fill the viewport instead of a narrow left column. */
+.compare-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.compare-2col .section {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+/* Locked comparison: ring beside the copy, full width. */
+.locked-wide {
+  display: grid;
+  grid-template-columns: auto 150px minmax(0, 1fr);
+  column-gap: 26px;
+  align-items: center;
+}
+
+.locked-wide .section-label {
+  grid-column: 1 / -1;
+}
+
+.locked-wide .bench-ring {
+  width: 130px;
+  height: 130px;
+  margin: 8px 0 0;
+  grid-column: 2;
+}
+
+.locked-wide > p {
+  grid-column: 3;
+  text-align: left !important;
+  margin: 4px 0 !important;
+  max-width: 62ch;
+}
+
+@media (max-width: 1000px) {
+  .locked-wide {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .locked-wide .bench-ring,
+  .locked-wide > p {
+    grid-column: auto;
+    text-align: center !important;
+  }
+  .models-grid,
+  .compare-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Full-width strip beneath the board (was a 264px right rail). */
 .bench-strip {
   margin-top: 22px;

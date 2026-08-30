@@ -76,7 +76,7 @@ function LockedView({ completionBps, remainingCount }: { completionBps: number; 
   // Ring arc fraction — bps is a ratio, not money.
   const frac = Math.max(0, Math.min(completionBps, 10000)) / 10000;
   return (
-    <div className="card card-pad" style={{ maxWidth: 480 }}>
+    <div className="card card-pad locked-wide">
       <span className="section-label">Locked</span>
       <svg className="bench-ring" viewBox="0 0 120 120" role="img" aria-label="Final costs entered">
         <circle cx="60" cy="60" r={RING_R} fill="none" stroke="var(--line)" strokeWidth="8" />
@@ -218,11 +218,9 @@ function UnlockedView({ report, you }: { report: BenchmarkReport; you: YourStand
 
   return (
     <>
-      <YourStandingCard report={report} you={you} />
-
-      <section className="section">
-        <span className="section-label">Across Every Job In The Pool</span>
-        <div className="card card-pad" style={{ marginTop: 8, maxWidth: 720 }}>
+      <div className="compare-2col section">
+        <YourStandingCard report={report} you={you} />
+        <div className="card card-pad">
           {report.overall.locked ? (
             <NotEnoughData kJobs={report.kJobs} kRoofers={report.kTenants} />
           ) : (
@@ -261,21 +259,23 @@ function UnlockedView({ report, you }: { report: BenchmarkReport; you: YourStand
             </>
           )}
         </div>
-      </section>
+      </div>
 
-      {shown.map((g) => (
-        <section className="section" key={g.heading}>
-          <span className="section-label">{g.heading}</span>
-          <p className="muted" style={{ fontSize: 12, margin: '-4px 0 8px', maxWidth: 640 }}>
-            {g.why}
-          </p>
-          <div className="card" style={{ maxWidth: 720 }}>
-            {g.open.map((s) => (
-              <StratumRow key={s.key} stratum={s} scaleMax={scaleMax} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="compare-2col">
+        {shown.map((g) => (
+          <section className="section" key={g.heading}>
+            <span className="section-label">{g.heading}</span>
+            <p className="muted" style={{ fontSize: 12, margin: '-4px 0 8px' }}>
+              {g.why}
+            </p>
+            <div className="card">
+              {g.open.map((s) => (
+                <StratumRow key={s.key} stratum={s} scaleMax={scaleMax} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       {building.length > 0 && (
         <p className="muted" style={{ fontSize: 12, maxWidth: 640, marginTop: -10, marginBottom: 22 }}>
@@ -335,8 +335,7 @@ function YourStandingCard({ report, you }: { report: BenchmarkReport; you: YourS
   const verdict = deltaBps === null ? null : verdictFor(deltaBps);
 
   return (
-    <section className="section">
-      <div className="card card-pad" style={{ maxWidth: 720 }}>
+      <div className="card card-pad">
         <div className="card-head">
           <h2>Your Surprise Costs</h2>
           {deltaBps !== null && Math.abs(deltaBps) > PARITY_BAND_BPS && (
@@ -408,7 +407,6 @@ function YourStandingCard({ report, you }: { report: BenchmarkReport; you: YourS
           {verdict !== null ? verdict.text : <NeedsOwnJobs you={you} />}
         </p>
       </div>
-    </section>
   );
 }
 

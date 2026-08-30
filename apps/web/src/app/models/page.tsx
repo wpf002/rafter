@@ -221,7 +221,8 @@ export default function ModelsPage() {
           <EmptyState>No pricing set up yet. Rafter needs a set of rates before it can build a quote.</EmptyState>
         </div>
       ) : (
-        (models.data ?? []).map((model) => {
+        <div className="models-grid">
+          {(models.data ?? []).map((model) => {
           const versions = versionsOf(model);
           const latest = versions[0];
           const older = versions.slice(1);
@@ -304,7 +305,8 @@ export default function ModelsPage() {
               </div>
             </section>
           );
-        })
+          })}
+        </div>
       )}
     </>
   );
