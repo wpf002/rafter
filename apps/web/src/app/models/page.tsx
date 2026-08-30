@@ -225,7 +225,6 @@ export default function ModelsPage() {
           {(models.data ?? []).map((model) => {
           const versions = versionsOf(model);
           const latest = versions[0];
-          const older = versions.slice(1);
           const isEditing = editing === model.id;
           return (
             <section className="section" key={model.id}>
@@ -280,26 +279,6 @@ export default function ModelsPage() {
                 ) : (
                   <>
                     <RateSheet rates={latest.rates} />
-                    {older.length > 0 && (
-                      <details className="version-history">
-                        <summary>Previous Versions ({older.length})</summary>
-                        <p className="muted" style={{ fontSize: 12, margin: '8px 0 4px', maxWidth: 640 }}>
-                          Quotes you already sent keep the exact prices you quoted them at, so Rafter
-                          keeps every older set of rates exactly as it was. They can&rsquo;t be edited or
-                          deleted.
-                        </p>
-                        {older.map((v) => (
-                          <details className="events" key={v.id} style={{ marginTop: 10 }}>
-                            <summary>
-                              Version {v.version} · Created {fmtDate(v.createdAt)}
-                            </summary>
-                            <div className="events-list">
-                              <RateSheet rates={v.rates} />
-                            </div>
-                          </details>
-                        ))}
-                      </details>
-                    )}
                   </>
                 )}
               </div>

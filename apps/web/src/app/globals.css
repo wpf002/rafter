@@ -814,12 +814,17 @@ a:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .models-grid .section {
   margin-bottom: 0;
   min-width: 0;
+  display: flex;
+}
+
+.models-grid .section > .card {
+  flex: 1 1 auto;
 }
 
 /* Compare page: fill the viewport instead of a narrow left column. */
