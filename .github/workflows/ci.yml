@@ -1,0 +1,31 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request: {}
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: rafter, POSTGRES_PASSWORD: rafter, POSTGRES_DB: rafter }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rafter" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://rafter:rafter@localhost:5432/rafter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/boundary-guard.mjs
+      - run: pnpm -r --filter @rafter/db exec prisma generate
+      - run: pnpm -r --filter @rafter/db exec prisma migrate deploy
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test

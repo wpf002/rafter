@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobState {
+  DRAFT
+  QUOTED
+  SOLD
+  IN_PROGRESS
+  AWAITING_CLOSEOUT
+  CLOSED
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
+model User {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  email    String @unique
+
+  @@index([tenantId])
+}
+
+model PriceModel {
+  id        String              @id @default(cuid())
+  tenantId  String
+  name      String
+  createdAt DateTime            @default(now())
+  versions  PriceModelVersion[]
+
+  @@index([tenantId])
+}
+
+model PriceModelVersion {
+  id           String     @id @default(cuid())
+  priceModelId String
+  priceModel   PriceModel @relation(fields: [priceModelId], references: [id], onDelete: Cascade)
+  tenantId     String
+  version      Int
+  rates        Json
+  createdAt    DateTime   @default(now())
+  quotes       Quote[]
+
+  @@unique([priceModelId, version])
+  @@index([tenantId])
+}
+
+model Job {
+  id           String       @id @default(cuid())
+  tenantId     String
+  name         String
+  address      String
+  customerName String
+  state        JobState     @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  measurement  Measurement?
+  quote        Quote?
+  closeout     Closeout?
+  photos       Photo[]
+  events       Event[]
+
+  @@index([tenantId])
+  @@index([tenantId, state])
+}
+
+model Measurement {
+  id               String   @id @default(cuid())
+  jobId            String   @unique
+  job              Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantId         String
+  source           String
+  providerRef      String?
+  capturedAt       DateTime
+  roofAreaSqFt     Int
+  pitchTwelfths    Int
+  stories          Int
+  facets           Int
+  ridgeHipLf       Int
+  valleyLf         Int
+  eaveLf           Int
+  rakeLf           Int
+  flashingLf       Int
+  penetrations     Int
+  existingLayers   Int
+  deckingCondition String
+
+  @@index([tenantId])
+}
+
+model Quote {
+  id                  String            @id @default(cuid())
+  jobId               String            @unique
+  job                 Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantId            String
+  priceModelVersionId String
+  priceModelVersion   PriceModelVersion @relation(fields: [priceModelVersionId], references: [id])
+  engineVersion       String
+  asOf                DateTime
+  issuedAt            DateTime
+  subtotalCents       BigInt
+  overheadCents       BigInt
+  marginCents         BigInt
+  totalCents          BigInt
+  lineItems           QuoteLineItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, issuedAt])
+}
+
+model QuoteLineItem {
+  id               String @id @default(cuid())
+  quoteId          String
+  quote            Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  tenantId         String
+  idx              Int
+  code             String
+  description      String
+  unit             String
+  quantityX100     Int
+  unitRateCents    BigInt
+  netMultiplierBps Int
+  totalCents       BigInt
+  factors          Json
+
+  @@unique([quoteId, idx])
+  @@index([tenantId])
+}
+
+model Closeout {
+  id                String            @id @default(cuid())
+  jobId             String            @unique
+  job               Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantId          String
+  submittedAt       DateTime
+  actualCostCents   BigInt
+  varianceCents     BigInt
+  attributedCents   BigInt
+  unattributedCents BigInt
+  lines             CloseoutLineItem[]
+  attributions      VarianceRecord[]
+
+  @@index([tenantId])
+}
+
+model CloseoutLineItem {
+  id          String   @id @default(cuid())
+  closeoutId  String
+  closeout    Closeout @relation(fields: [closeoutId], references: [id], onDelete: Cascade)
+  tenantId    String
+  description String
+  category    String
+  amountCents BigInt
+
+  @@index([tenantId])
+}
+
+model VarianceRecord {
+  id          String   @id @default(cuid())
+  closeoutId  String
+  closeout    Closeout @relation(fields: [closeoutId], references: [id], onDelete: Cascade)
+  tenantId    String
+  reason      String
+  amountCents BigInt
+  note        String?
+  photoId     String?
+
+  @@index([tenantId])
+}
+
+model Photo {
+  id          String    @id @default(cuid())
+  jobId       String
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantId    String
+  filename    String
+  data        Bytes
+  exifTakenAt DateTime?
+  uploadedAt  DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([jobId])
+}
+
+model Event {
+  id       String   @id @default(cuid())
+  jobId    String
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantId String
+  kind     String
+  payload  Json
+  at       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([jobId, at])
+}
