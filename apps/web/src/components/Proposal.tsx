@@ -51,7 +51,7 @@ export function ProposalTable({ comp }: { comp: QuoteComputation }) {
         ))}
         <tr className="row-subtotal">
           <td className="chev" />
-          <td>Direct cost subtotal</td>
+          <td>Direct Cost Subtotal</td>
           <td className="num" />
           <td className="num" />
           <td className="num mono">{formatMoney(toMoney(comp.subtotalCents))}</td>
@@ -61,7 +61,7 @@ export function ProposalTable({ comp }: { comp: QuoteComputation }) {
         ))}
         <tr className="row-total">
           <td className="chev" />
-          <td>Contract total</td>
+          <td>Contract Total</td>
           <td className="num" />
           <td className="num" />
           <td className="num">{formatMoney(toMoney(comp.totalCents))}</td>
@@ -126,7 +126,7 @@ export function Receipt({ factors }: { factors: Factor[] }) {
           </span>
         </div>
       ))}
-      <div className="receipt-footer">rule {rules.join(' · ')}</div>
+      <div className="receipt-footer">Rule {rules.join(' · ')}</div>
     </div>
   );
 }

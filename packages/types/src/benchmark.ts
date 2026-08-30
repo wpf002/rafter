@@ -49,6 +49,16 @@ export const BenchmarkReport = z.object({
 });
 export type BenchmarkReport = z.infer<typeof BenchmarkReport>;
 
+/** The viewing roofer's own surprise-cost record, for side-by-side comparison. */
+export const YourStanding = z.object({
+  jobs: z.number().int(),
+  /** Their own median surprise cost as bps of contract. Null below 3 closed jobs. */
+  medianBps: z.number().int().nullable(),
+  /** medianBps minus the pool's P50. Positive = they eat more than most. */
+  vsPoolBps: z.number().int().nullable(),
+});
+export type YourStanding = z.infer<typeof YourStanding>;
+
 export const BenchmarkResponse = z.object({
   /** Gate (D8): unlocks at 80% closeout completion on jobs ≥30 days old. */
   unlocked: z.boolean(),
@@ -57,5 +67,7 @@ export const BenchmarkResponse = z.object({
   remainingCount: z.number().int(),
   /** Aggregate-only report; null while locked. */
   report: BenchmarkReport.nullable(),
+  /** Their own figures — never other roofers' rows. Null while locked. */
+  you: YourStanding.nullable(),
 });
 export type BenchmarkResponse = z.infer<typeof BenchmarkResponse>;

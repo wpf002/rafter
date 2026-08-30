@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { BenchmarkResponse } from '@rafter/types';
 import { MATERIAL_PRICE_INDEX, benchmark } from '@rafter/db';
-import { computeBenchmark } from '@rafter/engine';
+import { computeBenchmark, computeYourStanding } from '@rafter/engine';
 
 /** Gate threshold (D8): 80% closeout completion on jobs ≥30 days old. */
 const GATE_BPS = 8000;
@@ -9,7 +9,8 @@ const GATE_BPS = 8000;
 export function benchmarkRoutes(app: FastifyInstance): void {
   // D10 — the pooled rows reduce to k-anonymous percentile strata here and
   // ONLY the aggregate report is serialized: no tenant ids, job ids, or
-  // per-job rows ever reach the wire.
+  // per-job rows ever reach the wire. `you` is the caller's own figures
+  // reduced to a single median, which is their own data and no one else's.
   app.get('/api/benchmark', async (request) => {
     const g = await benchmark.gate(request.tenantId, new Date());
     if (g.completionBps < GATE_BPS) {
@@ -18,6 +19,7 @@ export function benchmarkRoutes(app: FastifyInstance): void {
         completionBps: g.completionBps,
         remainingCount: g.remainingCount,
         report: null,
+        you: null,
       };
       return locked;
     }
@@ -28,11 +30,15 @@ export function benchmarkRoutes(app: FastifyInstance): void {
       kJobs: 20,
       kTenants: 3,
     });
+    const you = computeYourStanding(await benchmark.ownRecords(request.tenantId), report, {
+      indexBps: MATERIAL_PRICE_INDEX,
+    });
     const unlocked: BenchmarkResponse = {
       unlocked: true,
       completionBps: g.completionBps,
       remainingCount: g.remainingCount,
       report,
+      you,
     };
     return unlocked;
   });

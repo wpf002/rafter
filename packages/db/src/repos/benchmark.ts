@@ -9,6 +9,62 @@ function tenantKey(tenantId: string): string {
   return createHash('sha256').update(tenantId).digest('hex').slice(0, 12);
 }
 
+/**
+ * Shared derivation for both record queries. `tenantId` undefined means the
+ * cross-tenant pool; a value scopes it to that one roofer. Identical shape and
+ * identical concealed-condition summing either way, so the pooled distribution
+ * and a roofer's own standing can never be derived differently.
+ */
+async function records(tenantId?: string): Promise<BenchmarkRecord[]> {
+  const rows = await prisma.job.findMany({
+    where: {
+      ...(tenantId === undefined ? {} : { tenantId }),
+      state: 'CLOSED',
+      quote: { isNot: null },
+      measurement: { isNot: null },
+      closeout: { isNot: null },
+    },
+    include: {
+      quote: { select: { totalCents: true, asOf: true } },
+      measurement: {
+        select: {
+          roofAreaSqFt: true,
+          pitchTwelfths: true,
+          existingLayers: true,
+          roofAgeYears: true,
+        },
+      },
+      closeout: {
+        select: {
+          submittedAt: true,
+          attributions: { select: { reason: true, amountCents: true } },
+        },
+      },
+    },
+    orderBy: [{ closeout: { submittedAt: 'asc' } }, { id: 'asc' }],
+  });
+
+  return rows
+    .filter((j) => j.quote !== null && j.measurement !== null && j.closeout !== null)
+    .map((j) => {
+      let concealed = 0n;
+      for (const a of j.closeout!.attributions) {
+        if (a.reason === 'CONCEALED_CONDITION') concealed += a.amountCents;
+      }
+      return {
+        tenantKey: tenantKey(j.tenantId),
+        concealedCents: fromMoney(concealed),
+        contractCents: fromMoney(j.quote!.totalCents),
+        squaresX100: j.measurement!.roofAreaSqFt,
+        pitchTwelfths: j.measurement!.pitchTwelfths,
+        existingLayers: j.measurement!.existingLayers,
+        roofAgeYears: j.measurement!.roofAgeYears,
+        quoteMonth: j.quote!.asOf.toISOString().slice(0, 7),
+        closeMonth: j.closeout!.submittedAt.toISOString().slice(0, 7),
+      };
+    });
+}
+
 export const benchmark = {
   /**
    * Phase 6 gate (D8 — withhold the benefit, never the tool): eligible jobs
@@ -42,51 +98,16 @@ export const benchmark = {
    * row-level is ever served. tenantKey is an opaque hash, never an id.
    */
   async poolRecords(): Promise<BenchmarkRecord[]> {
-    const rows = await prisma.job.findMany({
-      where: {
-        state: 'CLOSED',
-        quote: { isNot: null },
-        measurement: { isNot: null },
-        closeout: { isNot: null },
-      },
-      include: {
-        quote: { select: { totalCents: true, asOf: true } },
-        measurement: {
-          select: {
-            roofAreaSqFt: true,
-            pitchTwelfths: true,
-            existingLayers: true,
-            roofAgeYears: true,
-          },
-        },
-        closeout: {
-          select: {
-            submittedAt: true,
-            attributions: { select: { reason: true, amountCents: true } },
-          },
-        },
-      },
-      orderBy: [{ closeout: { submittedAt: 'asc' } }, { id: 'asc' }],
-    });
+    return records();
+  },
 
-    return rows
-      .filter((j) => j.quote !== null && j.measurement !== null && j.closeout !== null)
-      .map((j) => {
-        let concealed = 0n;
-        for (const a of j.closeout!.attributions) {
-          if (a.reason === 'CONCEALED_CONDITION') concealed += a.amountCents;
-        }
-        return {
-          tenantKey: tenantKey(j.tenantId),
-          concealedCents: fromMoney(concealed),
-          contractCents: fromMoney(j.quote!.totalCents),
-          squaresX100: j.measurement!.roofAreaSqFt,
-          pitchTwelfths: j.measurement!.pitchTwelfths,
-          existingLayers: j.measurement!.existingLayers,
-          roofAgeYears: j.measurement!.roofAgeYears,
-          quoteMonth: j.quote!.asOf.toISOString().slice(0, 7),
-          closeMonth: j.closeout!.submittedAt.toISOString().slice(0, 7),
-        };
-      });
+  /**
+   * SINGLE-TENANT: the caller's own closed jobs only. Feeds the "how you
+   * compare" side of the report, which is the viewer's own data reflected
+   * back at them — it exposes nothing about any other roofer, so D10 is
+   * untouched. Same shape and derivation as poolRecords.
+   */
+  async ownRecords(tenantId: string): Promise<BenchmarkRecord[]> {
+    return records(tenantId);
   },
 };

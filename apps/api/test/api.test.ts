@@ -450,11 +450,23 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
       }
     }
 
-    // D10 — no raw tenant id (any tenant's) may appear anywhere in the payload.
+    // The caller's own figures ride alongside the pool so the page can compare.
+    expect(body.you).not.toBeNull();
+    expect(body.you!.jobs).toBeGreaterThan(0);
+    expect(body.you!.medianBps).not.toBeNull();
+    expect(Number.isInteger(body.you!.medianBps)).toBe(true);
+    // vsPool is exactly the difference against the pool's own median.
+    expect(body.you!.vsPoolBps).toBe(body.you!.medianBps! - body.report!.overall.p50Bps!);
+    // Their own jobs are a subset of the pool's.
+    expect(body.you!.jobs).toBeLessThanOrEqual(body.report!.overall.jobs);
+
+    // D10 — no raw tenant id (any tenant's) may appear anywhere in the payload,
+    // and `you` adds no per-job rows: it is three integers.
     const tenantsRes = await app.inject({ method: 'GET', url: '/api/tenants' });
     for (const t of tenantsRes.json() as TenantSummary[]) {
       expect(res.body).not.toContain(t.id);
     }
+    expect(Object.keys(body.you!).sort()).toEqual(['jobs', 'medianBps', 'vsPoolBps']);
 
     // Dashboard panel and benchmark endpoint share benchmark.gate — must agree.
     const dash = await inject({ method: 'GET', url: '/api/dashboard', tenant: summitId });
@@ -474,6 +486,11 @@ describe.skipIf(!hasDb)('@rafter/api integration', () => {
     expect(body.completionBps).toBeLessThan(8000);
     expect(body.remainingCount).toBeGreaterThan(0);
     expect(body.report).toBeNull();
+    expect(body.you).toBeNull();
+    for (const t of (await app.inject({ method: 'GET', url: '/api/tenants' }))
+      .json() as TenantSummary[]) {
+      expect(res.body).not.toContain(t.id);
+    }
 
     const dash = await inject({
       method: 'GET',

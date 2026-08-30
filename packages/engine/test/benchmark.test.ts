@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BenchmarkReport, type BenchmarkRecord, type StratumResult } from '@rafter/types';
-import { computeBenchmark } from '../src/index';
+import {
+  BenchmarkReport,
+  YourStanding,
+  type BenchmarkRecord,
+  type StratumResult,
+} from '@rafter/types';
+import { computeBenchmark, computeYourStanding } from '../src/index';
 
 /** Everything unlocked: floor of 1 job / 1 tenant, no index movement. */
 const K1 = { indexBps: {}, kJobs: 1, kTenants: 1 };
@@ -360,5 +365,157 @@ describe('computeBenchmark determinism and shape', () => {
     expect(report.deflated).toBe(true);
     expect('generatedAt' in report).toBe(false);
     expect(report.overall.key).toBe('overall');
+  });
+});
+
+/* ---------------- computeYourStanding ---------------- */
+
+/** An unlocked pool whose overall P50 is exactly `p50Bps`. */
+function poolAt(p50Bps: number) {
+  const report = computeBenchmark([pct(p50Bps, 'pool')], K1);
+  expect(report.overall.p50Bps).toBe(p50Bps); // guard the fixture itself
+  return report;
+}
+
+/** A pool with nothing in it — overall P50 is null. */
+const EMPTY_POOL = computeBenchmark([], KDEF);
+
+const OWN = { indexBps: {} };
+
+describe('computeYourStanding median', () => {
+  it('odd count: nearest-rank P50 is the middle value', () => {
+    const you = computeYourStanding([pct(100), pct(300), pct(200)], poolAt(200), OWN);
+    expect(you.jobs).toBe(3);
+    expect(you.medianBps).toBe(200); // sorted [100,200,300], ceil(1.5)=2 → index 1
+  });
+
+  it('even count: nearest-rank P50 takes the lower middle, matching the pool', () => {
+    const records = [pct(100), pct(200), pct(300), pct(400)];
+    const you = computeYourStanding(records, poolAt(200), OWN);
+    expect(you.jobs).toBe(4);
+    expect(you.medianBps).toBe(200); // ceil(2)=2 → index 1, no averaging
+    // The pool's own P50 over the same four values agrees.
+    expect(computeBenchmark(records, K1).overall.p50Bps).toBe(200);
+  });
+
+  it('counts only records with a usable contract', () => {
+    const you = computeYourStanding(
+      [pct(100), pct(300), pct(200), rec({ concealedCents: '5000', contractCents: '0' })],
+      poolAt(200),
+      OWN,
+    );
+    expect(you.jobs).toBe(3);
+    expect(you.medianBps).toBe(200);
+  });
+});
+
+describe('computeYourStanding minimum jobs', () => {
+  it('withholds the median below 3 jobs', () => {
+    for (const records of [[], [pct(500)], [pct(500), pct(900)]]) {
+      const you = computeYourStanding(records, poolAt(400), OWN);
+      expect(you.jobs).toBe(records.length);
+      expect(you.medianBps).toBeNull();
+      expect(you.vsPoolBps).toBeNull();
+    }
+  });
+
+  it('reports the median at exactly 3 jobs', () => {
+    const you = computeYourStanding([pct(500), pct(700), pct(900)], poolAt(400), OWN);
+    expect(you.jobs).toBe(3);
+    expect(you.medianBps).toBe(700);
+  });
+
+  it('honors a custom minJobs floor in both directions', () => {
+    const records = [pct(500), pct(700), pct(900)];
+    expect(computeYourStanding(records, poolAt(400), { ...OWN, minJobs: 4 }).medianBps).toBeNull();
+    expect(computeYourStanding([pct(500)], poolAt(400), { ...OWN, minJobs: 1 }).medianBps).toBe(500);
+  });
+
+  it('a contract-less record does not count toward the floor', () => {
+    const you = computeYourStanding(
+      [pct(500), pct(700), rec({ concealedCents: '5000', contractCents: '0' })],
+      poolAt(400),
+      OWN,
+    );
+    expect(you.jobs).toBe(2);
+    expect(you.medianBps).toBeNull();
+  });
+});
+
+describe('computeYourStanding vs the pool', () => {
+  it('positive when they eat more than the pool median', () => {
+    const you = computeYourStanding([pct(700), pct(800), pct(900)], poolAt(500), OWN);
+    expect(you.medianBps).toBe(800);
+    expect(you.vsPoolBps).toBe(300);
+  });
+
+  it('negative when they eat less than the pool median', () => {
+    const you = computeYourStanding([pct(100), pct(200), pct(300)], poolAt(500), OWN);
+    expect(you.medianBps).toBe(200);
+    expect(you.vsPoolBps).toBe(-300);
+  });
+
+  it('zero when they sit exactly on the pool median', () => {
+    const you = computeYourStanding([pct(400), pct(500), pct(600)], poolAt(500), OWN);
+    expect(you.vsPoolBps).toBe(0);
+  });
+
+  it('null when the pool side is withheld, even though their own median exists', () => {
+    const you = computeYourStanding([pct(100), pct(200), pct(300)], EMPTY_POOL, OWN);
+    expect(you.medianBps).toBe(200);
+    expect(you.vsPoolBps).toBeNull();
+  });
+});
+
+describe('computeYourStanding shares the pool per-record math', () => {
+  it('an identical single record yields the same bps on both paths', () => {
+    const indexBps = { '2025-01': 10000, '2025-06': 10500 };
+    const record = rec({
+      concealedCents: '100000',
+      contractCents: '1000000',
+      quoteMonth: '2025-01',
+      closeMonth: '2025-06',
+    });
+    const pooled = computeBenchmark([record], { indexBps, kJobs: 1, kTenants: 1 });
+    const you = computeYourStanding([record], pooled, { indexBps, minJobs: 1 });
+    expect(pooled.overall.p50Bps).toBe(952); // deflated, half-even
+    expect(you.medianBps).toBe(952);
+    expect(you.vsPoolBps).toBe(0);
+  });
+
+  it('deflation applies on the own side too, not just the pool', () => {
+    // Without deflation this would read 1000 bps; the index movement bends it.
+    const record = rec({
+      concealedCents: '100000',
+      contractCents: '1000000',
+      quoteMonth: '2025-01',
+      closeMonth: '2025-06',
+    });
+    const flat = computeYourStanding([record], EMPTY_POOL, { indexBps: {}, minJobs: 1 });
+    const deflated = computeYourStanding([record], EMPTY_POOL, {
+      indexBps: { '2025-01': 10000, '2025-06': 10500 },
+      minJobs: 1,
+    });
+    expect(flat.medianBps).toBe(1000);
+    expect(deflated.medianBps).toBe(952);
+  });
+});
+
+describe('computeYourStanding determinism and shape', () => {
+  it('is deterministic across 50 runs and does not mutate its input', () => {
+    const records = [900, 100, 500, 300, 700, 200].map((b) => pct(b));
+    const order = records.map((r) => r.concealedCents);
+    const pool = poolAt(450);
+    const first = JSON.stringify(computeYourStanding(records, pool, OWN));
+    for (let run = 0; run < 50; run++) {
+      expect(JSON.stringify(computeYourStanding(records, pool, OWN))).toBe(first);
+    }
+    expect(records.map((r) => r.concealedCents)).toEqual(order); // sorted a copy
+  });
+
+  it('output parses against the YourStanding schema and carries no rows', () => {
+    const you = computeYourStanding([pct(100), pct(200), pct(300)], poolAt(200), OWN);
+    expect(() => YourStanding.parse(you)).not.toThrow();
+    expect(Object.keys(you).sort()).toEqual(['jobs', 'medianBps', 'vsPoolBps']);
   });
 });

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MeasurementInput } from '@rafter/types';
-import { Banner, Skeleton } from '@/components/ui';
+import { Banner, PageHead, Skeleton } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import { parseCount } from '@/lib/money';
 import { useTenant } from '@/lib/tenant';
@@ -66,21 +66,17 @@ function NewJobInner() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>New job</h1>
-        </div>
-      </div>
+      <PageHead title="New Job" />
       {tenantError !== null && <Banner kind="error">{tenantError}</Banner>}
       {error !== null && <Banner kind="error">{error}</Banner>}
 
       {step === 'job' ? (
         <div className="card card-pad" style={{ maxWidth: 560 }}>
-          <div className="step-label">Step 1 of 2 — job</div>
+          <div className="step-label">Step 1 of 2 — Job</div>
           <form onSubmit={(e) => void createJob(e)}>
             <div className="field" style={{ marginBottom: 12 }}>
               <label className="field-label" htmlFor="job-name">
-                Job name
+                Job Name
               </label>
               <input
                 id="job-name"
@@ -119,7 +115,7 @@ function NewJobInner() {
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-copper" disabled={busy}>
-                {busy ? 'Creating…' : 'Create job — next: measurement'}
+                {busy ? 'Creating…' : 'Create Job — Next: Measurement'}
               </button>
             </div>
           </form>
@@ -231,7 +227,7 @@ function MeasurementStep({
 
   return (
     <div className="card card-pad" style={{ maxWidth: 760 }}>
-      <div className="step-label">Step 2 of 2 — measurement</div>
+      <div className="step-label">Step 2 of 2 — Measurement</div>
       <div className="card-head">
         <div className="seg" role="tablist" aria-label="Measurement source">
           <button
@@ -259,7 +255,7 @@ function MeasurementStep({
       {mode === 'MANUAL' ? (
         <form onSubmit={(e) => void submitManual(e)}>
           <div className="form-grid">
-            <SuffixField label="Roof area" suffix="sqft" value={m.roofAreaSqFt} onChange={set('roofAreaSqFt')} />
+            <SuffixField label="Roof Area" suffix="sqft" value={m.roofAreaSqFt} onChange={set('roofAreaSqFt')} />
             <SelectField label="Pitch" value={m.pitchTwelfths} onChange={set('pitchTwelfths')}>
               {Array.from({ length: 25 }, (_, n) => (
                 <option key={n} value={String(n)}>
@@ -275,13 +271,13 @@ function MeasurementStep({
               ))}
             </SelectField>
             <SuffixField label="Facets" suffix="count" value={m.facets} onChange={set('facets')} />
-            <SuffixField label="Ridge + hip" suffix="lf" value={m.ridgeHipLf} onChange={set('ridgeHipLf')} />
+            <SuffixField label="Ridge + Hip" suffix="lf" value={m.ridgeHipLf} onChange={set('ridgeHipLf')} />
             <SuffixField label="Valley" suffix="lf" value={m.valleyLf} onChange={set('valleyLf')} />
             <SuffixField label="Eave" suffix="lf" value={m.eaveLf} onChange={set('eaveLf')} />
             <SuffixField label="Rake" suffix="lf" value={m.rakeLf} onChange={set('rakeLf')} />
             <SuffixField label="Flashing" suffix="lf" value={m.flashingLf} onChange={set('flashingLf')} />
             <SuffixField label="Penetrations" suffix="count" value={m.penetrations} onChange={set('penetrations')} />
-            <SelectField label="Existing layers" value={m.existingLayers} onChange={set('existingLayers')}>
+            <SelectField label="Existing Layers" value={m.existingLayers} onChange={set('existingLayers')}>
               {[1, 2, 3, 4].map((n) => (
                 <option key={n} value={String(n)}>
                   {n}
@@ -289,14 +285,14 @@ function MeasurementStep({
               ))}
             </SelectField>
             <SuffixField
-              label="Roof age (optional)"
+              label="Roof Age (Optional)"
               suffix="yrs"
               value={m.roofAgeYears}
               onChange={set('roofAgeYears')}
             />
           </div>
           <div className="field" style={{ marginTop: 14 }}>
-            <span className="field-label">Decking condition</span>
+            <span className="field-label">Decking Condition</span>
             <div className="radio-row">
               {(['UNKNOWN', 'GOOD', 'SUSPECT'] as const).map((c) => (
                 <label key={c}>
@@ -314,7 +310,7 @@ function MeasurementStep({
           </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-copper" disabled={busy}>
-              {busy ? 'Attaching…' : 'Attach measurement'}
+              {busy ? 'Attaching…' : 'Attach Measurement'}
             </button>
           </div>
         </form>
@@ -336,7 +332,7 @@ function MeasurementStep({
             reports is attached with the measurement and shown on the job.
           </p>
           <button type="button" className="btn btn-copper" disabled={busy} onClick={() => void fetchAerial()}>
-            {busy ? 'Fetching…' : 'Fetch aerial measurement'}
+            {busy ? 'Fetching…' : 'Fetch Aerial Measurement'}
           </button>
         </div>
       )}

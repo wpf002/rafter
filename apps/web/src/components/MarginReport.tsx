@@ -12,7 +12,7 @@ import { DeltaChip, MetricCard } from './ui';
 import { Waterfall, type WaterfallStep } from './Waterfall';
 
 const REASON_ORDER: { reason: VarianceReason; label: string }[] = [
-  { reason: 'CONCEALED_CONDITION', label: 'Concealed' },
+  { reason: 'CONCEALED_CONDITION', label: 'Surprises' },
   { reason: 'CUSTOMER_SCOPE_CHANGE', label: 'Scope' },
   { reason: 'MEASUREMENT_ERROR', label: 'Measure' },
   { reason: 'PRICING_ERROR', label: 'Pricing' },
@@ -43,22 +43,22 @@ export function MarginReport({ variance }: { variance: VarianceReport }) {
 
   return (
     <section className="section">
-      <span className="section-label">Margin report</span>
+      <span className="section-label">Profit on This Job</span>
       <div className="metric-row" style={{ marginTop: 8 }}>
         <MetricCard label="Revenue" value={formatMoney(toMoney(variance.revenueCents))} />
-        <MetricCard label="Actual cost" value={formatMoney(toMoney(variance.actualCostCents))} />
+        <MetricCard label="Actual Cost" value={formatMoney(toMoney(variance.actualCostCents))} />
         <MetricCard
-          label="Gross margin"
+          label="Actual Profit"
           value={formatMoney(actual)}
           sub={formatBps(variance.actualMarginBps)}
           chip={
             <DeltaChip good={delta >= 0n}>
-              {formatMoney(delta, { sign: true })} vs plan
+              {formatMoney(delta, { sign: true })} vs Plan
             </DeltaChip>
           }
         />
         <MetricCard
-          label="Planned margin"
+          label="Planned Profit"
           value={formatMoney(planned)}
           sub={formatBps(variance.plannedMarginBps)}
         />
@@ -71,7 +71,7 @@ export function MarginReport({ variance }: { variance: VarianceReport }) {
           <table className="table">
             <thead>
               <tr>
-                <th>Actuals by category</th>
+                <th>Actual Costs by Category</th>
                 <th className="num">Amount</th>
               </tr>
             </thead>

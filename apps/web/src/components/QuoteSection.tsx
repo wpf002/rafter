@@ -66,7 +66,7 @@ export function QuoteSection({
         <div className="card" style={{ marginTop: 8 }}>
           <EmptyState>
             No measurement yet — attach one to price this job.{' '}
-            <Link href={`/jobs/new?job=${job.id}`}>Add measurement</Link>
+            <Link href={`/jobs/new?job=${job.id}`}>Add Measurement</Link>
           </EmptyState>
         </div>
       </section>
@@ -177,7 +177,7 @@ function QuoteBuilder({
         <div className="card-head no-print">
           <div className="field" style={{ minWidth: 260 }}>
             <label className="field-label" htmlFor="pm-version">
-              Price model version
+              Price Model Version
             </label>
             <select
               id="pm-version"
@@ -185,7 +185,7 @@ function QuoteBuilder({
               value={versionId}
               onChange={(e) => setVersionId(e.target.value)}
             >
-              {options.length === 0 && <option value="">No price models</option>}
+              {options.length === 0 && <option value="">No Price Models</option>}
               {options.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
@@ -199,7 +199,7 @@ function QuoteBuilder({
             disabled={preview === null || previewLoading || issuing}
             onClick={() => void issue()}
           >
-            {issuing ? 'Issuing…' : 'Issue quote'}
+            {issuing ? 'Issuing…' : 'Issue Quote'}
           </button>
         </div>
         {previewLoading ? (

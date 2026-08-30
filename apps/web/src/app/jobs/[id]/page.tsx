@@ -8,7 +8,7 @@ import { EventLog } from '@/components/EventLog';
 import { MarginReport } from '@/components/MarginReport';
 import { MeasurementCard } from '@/components/MeasurementCard';
 import { QuoteSection } from '@/components/QuoteSection';
-import { Banner, Skeleton, StatePill } from '@/components/ui';
+import { Banner, PageHead, Skeleton, StatePill } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { useTenant } from '@/lib/tenant';
@@ -19,9 +19,9 @@ import { useTenant } from '@/lib/tenant';
  * closeout (D6); CLOSED never has a button.
  */
 const TRANSITION_ACTIONS: Partial<Record<JobState, { to: JobState; label: string }>> = {
-  QUOTED: { to: 'SOLD', label: 'Mark sold' },
-  SOLD: { to: 'IN_PROGRESS', label: 'Start work' },
-  IN_PROGRESS: { to: 'AWAITING_CLOSEOUT', label: 'Mark work complete' },
+  QUOTED: { to: 'SOLD', label: 'Mark Sold' },
+  SOLD: { to: 'IN_PROGRESS', label: 'Start Work' },
+  IN_PROGRESS: { to: 'AWAITING_CLOSEOUT', label: 'Mark Work Complete' },
 };
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,34 +52,25 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
 
   return (
     <>
-      <div className="page-head">
-        <div>
+      <PageHead
+        above={
           <Link href="/jobs" className="crumb">
             ← Jobs
           </Link>
-          {job !== null ? (
-            <>
-              <h1>{job.name}</h1>
-              <div className="muted" style={{ fontSize: 13 }}>
-                {job.address} · {job.customerName}
-              </div>
-            </>
-          ) : (
-            <div style={{ display: 'grid', gap: 6 }}>
-              <Skeleton h={24} w={260} />
-              <Skeleton h={14} w={200} />
-            </div>
-          )}
-        </div>
-        <div className="head-actions no-print">
-          {job !== null && <StatePill state={job.state} />}
-          {legal && action !== undefined && (
-            <button type="button" className="btn btn-copper" disabled={transBusy} onClick={() => void doTransition()}>
-              {transBusy ? 'Working…' : action.label}
-            </button>
-          )}
-        </div>
-      </div>
+        }
+        title={job !== null ? job.name : <Skeleton h={24} w={260} />}
+        sub={job !== null ? `${job.address} · ${job.customerName}` : <Skeleton h={14} w={200} />}
+        actions={
+          <>
+            {job !== null && <StatePill state={job.state} />}
+            {legal && action !== undefined && (
+              <button type="button" className="btn btn-copper" disabled={transBusy} onClick={() => void doTransition()}>
+                {transBusy ? 'Working…' : action.label}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {tenantError !== null && <Banner kind="error">{tenantError}</Banner>}
       {detail.error !== null && <Banner kind="error">{detail.error}</Banner>}

@@ -88,10 +88,9 @@ a:hover {
 
 .section-label {
   font-family: var(--font-head), Arial, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
@@ -179,34 +178,6 @@ a:hover {
   background: rgba(255, 255, 255, 0.07);
 }
 
-.tenant-box {
-  margin-top: auto;
-  padding: 14px 20px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.side-label {
-  display: block;
-  font-family: var(--font-head), Arial, sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 6px;
-}
-
-.tenant-select {
-  width: 100%;
-  background: var(--asphalt-2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-  padding: 6px 8px;
-  font-family: var(--font-body), Arial, sans-serif;
-  font-size: 12px;
-}
-
 .main {
   flex: 1;
   min-width: 0;
@@ -228,10 +199,45 @@ a:hover {
   gap: 10px;
 }
 
+/* Tenant switcher, in the page header beside the primary action. */
+.tenant-inline {
+  appearance: none;
+  background: var(--card);
+  color: var(--asphalt);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 7px 10px;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  max-width: 220px;
+  cursor: pointer;
+}
+
+.tenant-inline:hover {
+  border-color: var(--muted);
+}
+
+.tenant-inline:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+  border-color: var(--copper);
+}
+
 .crumb {
   display: inline-block;
   font-size: 12px;
   margin-bottom: 4px;
+}
+
+/* One plain sentence under an h1: what this screen is for. */
+.why-line {
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 68ch;
+  margin: -8px 0 20px;
 }
 
 /* ---------------------------------------------------------------- */
@@ -368,8 +374,7 @@ a:hover {
   font-family: var(--font-head), Arial, sans-serif;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   padding: 3px 9px;
   border-radius: 2px;
   border: 1px solid transparent;
@@ -488,10 +493,9 @@ a:hover {
 .table th {
   text-align: left;
   font-family: var(--font-head), Arial, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   color: var(--muted);
   padding: 8px 10px;
   border-bottom: 1px solid var(--line);
@@ -515,36 +519,152 @@ a:hover {
   background: var(--card-tint);
 }
 
+/* Pagination bar, under a long table. */
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.pager-btn {
+  appearance: none;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  padding: 6px 12px;
+  background: var(--card);
+  color: var(--asphalt);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.pager-btn:hover:not(:disabled) {
+  border-color: var(--copper);
+  text-decoration: none;
+}
+
+.pager-btn[aria-current='true'],
+.pager-btn.is-active {
+  background: var(--asphalt);
+  border-color: var(--asphalt);
+  color: #fff;
+}
+
+.pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pager-btn:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+}
+
+.pager-info {
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* If it is dropped inside the bar, it still takes its own line. */
+.pager > .pager-info {
+  flex: 1 0 100%;
+}
+
 /* ---------------------------------------------------------------- */
 /* Kanban                                                            */
 /* ---------------------------------------------------------------- */
 
 .dash-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 264px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 
 .kanban-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
   padding-bottom: 4px;
 }
 
 .kanban {
   display: grid;
-  grid-template-columns: repeat(6, minmax(166px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  min-width: 1010px;
 }
 
+/* Only one of the six columns renders a flag above its heading, so every
+   column reserves the same band for it. Without this the flagged column's
+   heading sits lower than the other five and the header row reads crooked.
+   --flag-h must stay equal to the rendered .badge-closeout height:
+   line-height 15px + 2px padding top and bottom = 19px. */
+.kanban-col {
+  --flag-h: 19px;
+  --flag-gap: 6px;
+  min-width: 0;
+  padding-top: calc(var(--flag-h) + var(--flag-gap));
+}
+
+/* Columns are ~180px: the count badge moved above, so the heading itself
+   stays on a single line. It must never wrap — a second line would push this
+   column's cards down out of step with its neighbours. */
 .kanban-col-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   margin-bottom: 8px;
   min-height: 20px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.kanban-col-head > .section-label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kanban-col-head > .kanban-count {
+  flex: 0 0 auto;
+}
+
+/* Defensive: if a badge is ever put back inline in the head, it shrinks
+   rather than wrapping onto a second line. */
+.kanban-col-head > .badge-closeout {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Puts the copper "N Need Final Costs" badge on its own line above the head,
+   pulled up into the band .kanban-col already reserved, so a column with a
+   flag is exactly as tall above the heading as one without. */
+.kanban-col-flag {
+  display: flex;
+  align-items: center;
+  height: var(--flag-h);
+  margin-top: calc(-1 * (var(--flag-h) + var(--flag-gap)));
+  margin-bottom: var(--flag-gap);
+}
+
+/* Hugs its text: never stretches to the column width. */
+.kanban-col-flag .badge-closeout {
+  flex: 0 1 auto;
+  min-width: 0;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kanban-count {
@@ -557,17 +677,16 @@ a:hover {
   background: var(--copper);
   color: #fff;
   font-family: var(--font-head), Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   padding: 2px 6px;
   border-radius: 2px;
 }
 
 .job-card {
   display: block;
-  padding: 10px 12px;
+  padding: 9px 10px;
   margin-bottom: 8px;
   background: var(--card);
   border: 1px solid var(--line);
@@ -583,11 +702,13 @@ a:hover {
 .job-card-name {
   font-weight: 600;
   font-size: 13px;
+  line-height: 1.25;
 }
 
 .job-card-addr {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.3;
   margin: 2px 0 6px;
 }
 
@@ -647,6 +768,55 @@ a:hover {
   height: 10px;
   background: var(--line);
   border-radius: 1px;
+}
+
+/* Full-width strip beneath the board (was a 264px right rail). */
+.bench-strip {
+  margin-top: 22px;
+}
+
+.bench-strip .bench {
+  padding: 16px 18px;
+}
+
+/* Locked view: ring on the left, copy on the right. */
+.bench-strip .bench > div:has(> .bench-ring) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 22px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.bench-strip .bench-ring {
+  grid-row: 1 / span 2;
+  margin: 0;
+  width: 112px;
+  height: 112px;
+}
+
+.bench-strip .bench-text,
+.bench-strip .bench-pct {
+  text-align: left;
+  max-width: 640px;
+}
+
+.bench-strip .bench-text {
+  font-size: 13px;
+}
+
+/* Unlocked view: chip, caption and bars laid out across the width. */
+.bench-strip .bench > div:not(:has(.bench-ring)) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 22px;
+}
+
+.bench-strip .bench > div:not(:has(.bench-ring)) .bench-bar-row {
+  margin-top: 0;
+  flex: 1 1 160px;
+  min-width: 140px;
 }
 
 /* ---------------------------------------------------------------- */
@@ -748,8 +918,7 @@ a:hover {
   font-family: var(--font-head), Arial, sans-serif;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--muted);
   cursor: pointer;
 }
@@ -778,10 +947,9 @@ a:hover {
 
 .figure-label {
   font-family: var(--font-head), Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
@@ -822,10 +990,9 @@ a:hover {
 .proposal th {
   text-align: left;
   font-family: var(--font-head), Arial, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   color: var(--muted);
   padding: 6px 10px;
   border-bottom: 1px solid var(--line);
@@ -1125,8 +1292,7 @@ a:hover {
   font-family: var(--font-head), Arial, sans-serif;
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
@@ -1214,6 +1380,141 @@ a:hover {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- */
+/* Read-only rate sheet (pricing card)                               */
+/* ---------------------------------------------------------------- */
+
+.rate-group {
+  margin-bottom: 18px;
+}
+
+.rate-group:last-child {
+  margin-bottom: 0;
+}
+
+.rate-group + .rate-group {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.rate-group > .section-label,
+.rate-group > h2,
+.rate-group > h3 {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.rate-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  margin: 0;
+}
+
+/* Rows may be wrapped in .rate-row or written as bare dt/dd pairs. */
+.rate-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: subgrid;
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 7px 0;
+}
+
+.rate-row + .rate-row {
+  border-top: 1px solid var(--line);
+}
+
+.rate-row > :where(:first-child) {
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.rate-row > :where(:last-child) {
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  text-align: right;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.rate-list > dt,
+.rate-list > dd {
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  margin: 0;
+}
+
+.rate-list > dt:nth-child(-n + 2),
+.rate-list > dd:nth-child(-n + 2) {
+  border-top: none;
+}
+
+.rate-list > dt {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rate-list > dd {
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.in-use-badge {
+  display: inline-block;
+  background: var(--copper);
+  color: #fff;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.version-history {
+  margin-top: 12px;
+}
+
+.version-history > summary {
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.version-history > summary:hover {
+  color: var(--copper);
+}
+
+.version-history > summary:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.version-history[open] > summary {
+  margin-bottom: 10px;
+}
+
+.version-history > :not(summary) {
+  padding-left: 12px;
 }
 
 /* ---------------------------------------------------------------- */
@@ -1351,13 +1652,270 @@ a:hover {
   max-width: 640px;
 }
 
+/* Your job vs. everyone else's: one figure per cell, plain-English gloss. */
+.compare-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 18px;
+}
+
+.compare-cell {
+  min-width: 0;
+  text-align: left;
+}
+
+.compare-label {
+  display: block;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.compare-value {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--asphalt);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.compare-gloss {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+/* Same three roles by position, for a bare label/number/gloss cell.
+   Zero specificity: any class the markup sets wins over these. */
+:where(.compare-cell > :first-child:nth-last-child(3)) {
+  display: block;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+:where(.compare-cell > :nth-child(2):nth-last-child(2)) {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+:where(.compare-cell > :nth-child(3):last-child) {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+/* Hairlines only when the cells actually sit side by side. */
+@media (min-width: 761px) {
+  .compare-cell + .compare-cell {
+    border-left: 1px solid var(--line);
+    padding-left: 18px;
+  }
+}
+
+/* Headline answer card: the reader's own figure set against the pool, with a
+   plain-English verdict under it. Same surface and type scale as
+   .compare-row / .compare-cell, sized up so the two numbers rank clearly. */
+.standing-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 24px 26px;
+  max-width: 720px;
+}
+
+.standing-card-label {
+  display: block;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.standing-card-title {
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 6px 0 0;
+}
+
+.standing-card-sub {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 6px 0 0;
+  max-width: 560px;
+}
+
+/* Two figures side by side: theirs first and dominant, the pool second. */
+.standing-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px 28px;
+  margin-top: 20px;
+}
+
+.standing-figure {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.standing-figure-label {
+  display: block;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* The reader's own number — the thing they came to read.
+   Weight 500 is the heaviest mono face actually loaded; 600 would be faked. */
+.standing-mine {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--asphalt);
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* What everyone else did — context, deliberately quieter. */
+.standing-pool {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--muted);
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.standing-figure-note {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+/* Hairline between the two figures, only while they sit on one line. */
+@media (min-width: 561px) {
+  .standing-figures > .standing-figure + .standing-figure {
+    border-left: 1px solid var(--line);
+    padding-left: 28px;
+  }
+}
+
+/* Verdict line: the sentence that says which way the gap runs. */
+.standing-verdict {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--asphalt);
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 14px;
+}
+
+.standing-verdict-good {
+  color: var(--good);
+}
+
+.standing-verdict-bad {
+  color: var(--bad);
+}
+
+/* Trailing explanation under the verdict stays neutral and unbolded. */
+.standing-verdict-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--muted);
+  margin-top: 5px;
+  max-width: 560px;
+}
+
+/* Same three roles by position, for a bare label/number/note figure.
+   Zero specificity: any class the markup sets wins over these. */
+:where(.standing-figures > * > :first-child:nth-last-child(n + 2)) {
+  display: block;
+  font-family: var(--font-head), Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+:where(.standing-figures > :first-child > :nth-child(2)) {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+:where(.standing-figures > :nth-child(n + 2) > :nth-child(2)) {
+  display: block;
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--muted);
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .standing-card {
+    padding: 18px;
+  }
+
+  .standing-mine,
+  :where(.standing-figures > :first-child > :nth-child(2)) {
+    font-size: 32px;
+  }
+}
+
 /* ---------------------------------------------------------------- */
 /* Responsive                                                        */
 /* ---------------------------------------------------------------- */
 
 @media (max-width: 1100px) {
-  .dash-grid {
-    grid-template-columns: 1fr;
+  .kanban {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .metric-row {
@@ -1386,6 +1944,12 @@ a:hover {
   }
 }
 
+@media (max-width: 760px) {
+  .kanban {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* ---------------------------------------------------------------- */
 /* Print — proposal only, black on white                             */
 /* ---------------------------------------------------------------- */
@@ -1400,6 +1964,7 @@ a:hover {
   }
 
   .sidebar,
+  .tenant-inline,
   .no-print {
     display: none !important;
   }

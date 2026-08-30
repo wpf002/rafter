@@ -19,11 +19,20 @@ import { Banner, fmtDateTime } from './ui';
 
 const CATEGORIES: ActualCategory[] = ['MATERIAL', 'LABOR', 'DISPOSAL', 'PERMIT', 'OTHER'];
 
+/** Display copy only — the wire values stay the ActualCategory enum. */
+const CATEGORY_LABEL: Record<ActualCategory, string> = {
+  MATERIAL: 'Material',
+  LABOR: 'Labor',
+  DISPOSAL: 'Disposal',
+  PERMIT: 'Permit',
+  OTHER: 'Other',
+};
+
 const REASONS: { reason: VarianceReason; label: string }[] = [
-  { reason: 'CONCEALED_CONDITION', label: 'Concealed condition' },
-  { reason: 'CUSTOMER_SCOPE_CHANGE', label: 'Customer scope change' },
-  { reason: 'MEASUREMENT_ERROR', label: 'Measurement error' },
-  { reason: 'PRICING_ERROR', label: 'Pricing error' },
+  { reason: 'CONCEALED_CONDITION', label: 'Concealed Condition' },
+  { reason: 'CUSTOMER_SCOPE_CHANGE', label: 'Customer Scope Change' },
+  { reason: 'MEASUREMENT_ERROR', label: 'Measurement Error' },
+  { reason: 'PRICING_ERROR', label: 'Pricing Error' },
 ];
 
 interface ActualRow {
@@ -220,12 +229,12 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
 
   return (
     <section className="section">
-      <span className="section-label">Closeout</span>
+      <span className="section-label">Final Costs</span>
       <div className="closeout-grid" style={{ marginTop: 8 }}>
         <div className="card card-pad">
           <h2 style={{ marginBottom: 8 }}>Quoted</h2>
           <div className="kv">
-            <span>Direct subtotal</span>
+            <span>Direct Subtotal</span>
             <span className="val">{formatMoney(subtotal)}</span>
           </div>
           <div className="kv">
@@ -233,11 +242,11 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
             <span className="val">{formatMoney(overhead)}</span>
           </div>
           <div className="kv strong">
-            <span>Quoted cost</span>
+            <span>Quoted Cost</span>
             <span className="val">{formatMoney(quotedCost)}</span>
           </div>
           <div className="kv">
-            <span>Planned margin</span>
+            <span>Planned Profit</span>
             <span className="val">{formatMoney(planned)}</span>
           </div>
         </div>
@@ -274,7 +283,7 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
                     >
                       {CATEGORIES.map((c) => (
                         <option key={c} value={c}>
-                          {c}
+                          {CATEGORY_LABEL[c]}
                         </option>
                       ))}
                     </select>
@@ -300,18 +309,18 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
           </table>
           <div className="form-actions">
             <button type="button" className="btn btn-small" onClick={() => addRow()}>
-              Add line
+              Add Line
             </button>
           </div>
 
           {staged.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <span className="section-label">Staged from invoice — confirm to enter</span>
+              <span className="section-label">Staged From Invoice — Confirm to Enter</span>
               <div style={{ marginTop: 8 }}>
                 {staged.map((line, i) => (
                   <div className="staged-line" key={`${line.description}-${i}`}>
                     <span className="staged-desc">{line.description}</span>
-                    <span className="staged-cat">{line.category}</span>
+                    <span className="staged-cat">{CATEGORY_LABEL[line.category]}</span>
                     <span className="staged-amt">{formatMoney(toMoney(line.amountCents))}</span>
                     <button type="button" className="btn btn-small btn-copper" onClick={() => confirmStaged(i)}>
                       Confirm
@@ -326,7 +335,7 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
           )}
 
           <div style={{ marginTop: 14 }}>
-            <span className="section-label">Paste invoice</span>
+            <span className="section-label">Paste Invoice</span>
             {ingestErr !== null && <Banner kind="error">{ingestErr}</Banner>}
             <textarea
               className="textarea"
@@ -342,7 +351,7 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
                 disabled={ingestBusy || invoiceText.trim() === ''}
                 onClick={() => void runIngest()}
               >
-                {ingestBusy ? 'Parsing…' : 'Parse invoice'}
+                {ingestBusy ? 'Parsing…' : 'Parse Invoice'}
               </button>
             </div>
           </div>
@@ -351,15 +360,15 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
 
       <div className="compute-bar">
         <div className="kv2">
-          <span className="section-label">Actual total</span>
+          <span className="section-label">Actual Total</span>
           <span className="val">{formatMoney(actualTotal)}</span>
         </div>
         <div className="kv2">
-          <span className="section-label">Quoted cost</span>
+          <span className="section-label">Quoted Cost</span>
           <span className="val">{formatMoney(quotedCost)}</span>
         </div>
         <div className="kv2">
-          <span className="section-label">Variance</span>
+          <span className="section-label">Over or Under</span>
           <span className="val" style={{ color: variance > 0n ? 'var(--bad)' : variance < 0n ? 'var(--good)' : undefined }}>
             {formatMoney(variance, { sign: true })}
           </span>
@@ -367,9 +376,9 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
       </div>
 
       <div className="card card-pad">
-        <h2 style={{ marginBottom: 4 }}>Attribute the variance</h2>
+        <h2 style={{ marginBottom: 4 }}>Where the Difference Came From</h2>
         <p className="muted" style={{ margin: '0 0 8px', fontSize: 12 }}>
-          Every dollar of variance maps to exactly one reason before this job can close.
+          Every dollar over or under maps to exactly one reason before this job can close.
         </p>
         {REASONS.map(({ reason, label }) => (
           <div className="alloc-row" key={reason}>
@@ -417,13 +426,13 @@ export function CloseoutFlow({ jobId, quote, onDone }: { jobId: string; quote: Q
           ) : footerMessage !== null ? (
             <span className="unattr unattr-bad">{footerMessage}</span>
           ) : unattributed !== 0n ? (
-            <span className="unattr unattr-bad">Unattributed: {formatMoney(unattributed)}</span>
+            <span className="unattr unattr-bad">Not Accounted For: {formatMoney(unattributed)}</span>
           ) : (
-            <span className="unattr unattr-good">$0.00 — every dollar attributed</span>
+            <span className="unattr unattr-good">$0.00 — every dollar accounted for</span>
           )}
         </div>
         <button type="button" className="btn btn-copper" disabled={!canSubmit} onClick={() => void submit()}>
-          {submitBusy ? 'Submitting…' : 'Submit closeout'}
+          {submitBusy ? 'Submitting…' : 'Submit Final Costs'}
         </button>
       </div>
     </section>

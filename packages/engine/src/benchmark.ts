@@ -1,4 +1,9 @@
-import type { BenchmarkRecord, BenchmarkReport, StratumResult } from '@rafter/types';
+import type {
+  BenchmarkRecord,
+  BenchmarkReport,
+  StratumResult,
+  YourStanding,
+} from '@rafter/types';
 import { BPS_ONE, toMoney } from '@rafter/types';
 import { divHalfEven } from './money';
 
@@ -15,6 +20,9 @@ import { divHalfEven } from './money';
 
 const K_JOBS_DEFAULT = 20;
 const K_TENANTS_DEFAULT = 3;
+
+/** Closed jobs a roofer needs before their own median is worth showing. */
+const OWN_MIN_JOBS_DEFAULT = 3;
 
 interface Observation {
   tenantKey: string;
@@ -86,6 +94,9 @@ const AGE_BANDS: readonly BandDef[] = [
  * Deflation restates close-month concealed dollars in quote-month dollars via
  * the material index (bps, missing months default to BPS_ONE = no movement):
  * adjusted = concealed × idx(quoteMonth) / idx(closeMonth), half-even.
+ *
+ * SINGLE SOURCE for per-record math: both the pooled distribution and the
+ * viewer's own standing go through this function, so the two can never drift.
  */
 function pctBpsOf(record: BenchmarkRecord, indexBps: Record<string, number>): number | null {
   const contract = toMoney(record.contractCents);
@@ -180,5 +191,44 @@ export function computeBenchmark(
     kJobs,
     kTenants,
     deflated: true,
+  };
+}
+
+/**
+ * The viewing roofer's own surprise-cost record, positioned against the pool.
+ *
+ * This reads ONLY their own rows, so it carries no disclosure risk and no
+ * k-anonymity floor applies — the floor exists to protect other roofers, and
+ * nobody else's data is touched here. The separate `minJobs` gate is a
+ * statistical one: a median over one or two jobs is noise, not a record.
+ *
+ * Uses the same per-record kernel as the pool (`pctBpsOf`), so a given job
+ * contributes the identical number to both sides of the comparison.
+ * Pure and deterministic — no clock, no randomness.
+ */
+export function computeYourStanding(
+  ownRecords: BenchmarkRecord[],
+  pool: BenchmarkReport,
+  opts: { indexBps: Record<string, number>; minJobs?: number },
+): YourStanding {
+  const minJobs = opts.minJobs ?? OWN_MIN_JOBS_DEFAULT;
+
+  const pctBps: number[] = [];
+  for (const record of ownRecords) {
+    const p = pctBpsOf(record, opts.indexBps);
+    if (p === null) continue; // contract <= 0 has no denominator, same as the pool
+    pctBps.push(p);
+  }
+
+  const jobs = pctBps.length;
+  if (jobs < minJobs) return { jobs, medianBps: null, vsPoolBps: null };
+
+  // Same nearest-rank P50 the pool uses.
+  const medianBps = nearestRank([...pctBps].sort((a, b) => a - b), 50);
+  const poolP50 = pool.overall.p50Bps;
+  return {
+    jobs,
+    medianBps,
+    vsPoolBps: poolP50 === null ? null : medianBps - poolP50,
   };
 }

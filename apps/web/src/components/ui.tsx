@@ -2,15 +2,77 @@
 
 import type { JobState } from '@rafter/types';
 import type { ReactNode } from 'react';
+import { useTenant } from '@/lib/tenant';
 
 export const STATE_LABEL: Record<JobState, string> = {
   DRAFT: 'Draft',
   QUOTED: 'Quoted',
   SOLD: 'Sold',
-  IN_PROGRESS: 'In progress',
-  AWAITING_CLOSEOUT: 'Awaiting closeout',
+  IN_PROGRESS: 'In Progress',
+  AWAITING_CLOSEOUT: 'Awaiting Closeout',
   CLOSED: 'Closed',
 };
+
+/**
+ * Tenant switcher. Lives in the page header, immediately left of the primary
+ * action — never in the sidebar. Print hides it with the rest of .page-head.
+ */
+export function TenantSelect() {
+  const { tenants, tenantId, setTenant } = useTenant();
+  return (
+    <select
+      className="tenant-inline"
+      aria-label="Tenant"
+      value={tenantId ?? ''}
+      onChange={(e) => setTenant(e.target.value)}
+    >
+      {tenants.length === 0 ? (
+        <option value="">—</option>
+      ) : (
+        tenants.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))
+      )}
+    </select>
+  );
+}
+
+/**
+ * The one page header. `above` carries a breadcrumb, `sub` a one-line caption;
+ * `actions` is the primary action, always rendered to the right of the tenant
+ * switcher.
+ */
+export function PageHead({
+  title,
+  above,
+  sub,
+  actions,
+}: {
+  title: ReactNode;
+  above?: ReactNode;
+  sub?: ReactNode;
+  actions?: ReactNode;
+}) {
+  return (
+    <div className="page-head">
+      <div>
+        {above}
+        <h1>{title}</h1>
+        {sub !== undefined && (
+          <div className="muted" style={{ fontSize: 13 }}>
+            {sub}
+          </div>
+        )}
+      </div>
+      <div className="head-actions no-print">
+        <TenantSelect />
+        {actions}
+      </div>
+    </div>
+  );
+}
 
 export function StatePill({ state }: { state: JobState }) {
   return <span className={`pill pill-${state}`}>{STATE_LABEL[state]}</span>;

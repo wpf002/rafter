@@ -4,6 +4,18 @@ import type { Measurement } from '@rafter/types';
 import { formatQtyX100 } from '@/lib/money';
 import { Chip, fmtDate } from './ui';
 
+/** Display copy only — the stored source/condition enums are unchanged. */
+const SOURCE_LABEL: Record<string, string> = {
+  MANUAL: 'Manual',
+  AERIAL_STUB: 'Aerial',
+};
+
+const DECKING_LABEL: Record<string, string> = {
+  UNKNOWN: 'Unknown',
+  GOOD: 'Good',
+  SUSPECT: 'Suspect',
+};
+
 /**
  * Sanity-check grid of measurement figures. Area is not money — plain
  * number math is fine here (squares = sqft / 100).
@@ -16,14 +28,14 @@ export function MeasurementCard({ measurement }: { measurement: Measurement }) {
     ['Pitch', `${m.pitchTwelfths}/12`],
     ['Stories', String(m.stories)],
     ['Facets', String(m.facets)],
-    ['Ridge + hip', `${m.ridgeHipLf.toLocaleString('en-US')} lf`],
+    ['Ridge + Hip', `${m.ridgeHipLf.toLocaleString('en-US')} lf`],
     ['Valley', `${m.valleyLf.toLocaleString('en-US')} lf`],
     ['Eave', `${m.eaveLf.toLocaleString('en-US')} lf`],
     ['Rake', `${m.rakeLf.toLocaleString('en-US')} lf`],
     ['Flashing', `${m.flashingLf.toLocaleString('en-US')} lf`],
     ['Penetrations', String(m.penetrations)],
     ['Layers', String(m.existingLayers)],
-    ['Roof age', m.roofAgeYears !== null ? `${m.roofAgeYears} yrs` : '—'],
+    ['Roof Age', m.roofAgeYears !== null ? `${m.roofAgeYears} yrs` : '—'],
   ];
 
   return (
@@ -32,9 +44,9 @@ export function MeasurementCard({ measurement }: { measurement: Measurement }) {
       <div className="card card-pad" style={{ marginTop: 8 }}>
         <div className="card-head">
           <div className="card-head-meta">
-            <Chip tone={m.source === 'MANUAL' ? 'muted' : 'copper'}>{m.source}</Chip>
-            <span>captured {fmtDate(m.capturedAt)}</span>
-            <span>decking {m.deckingCondition.toLowerCase()}</span>
+            <Chip tone={m.source === 'MANUAL' ? 'muted' : 'copper'}>{SOURCE_LABEL[m.source] ?? m.source}</Chip>
+            <span>Captured {fmtDate(m.capturedAt)}</span>
+            <span>Decking {DECKING_LABEL[m.deckingCondition] ?? m.deckingCondition}</span>
           </div>
         </div>
         <div className="measure-grid">

@@ -10,29 +10,41 @@ import {
   type TuningReplayRow,
   type TuningResponse,
 } from '@rafter/types';
-import { Banner, fmtDate, Skeleton } from '@/components/ui';
+import { Banner, fmtDate, PageHead, Skeleton } from '@/components/ui';
 import { api, ApiRequestError, errorMessage } from '@/lib/api';
 import { sumMoney } from '@/lib/money';
 import { useApi } from '@/lib/hooks';
 import { useTenant } from '@/lib/tenant';
 
-/** Per-unit suffix for each tunable rate. Display only — not money math. */
-const RATE_SUFFIX: Record<TunableRateField, string> = {
-  tearOffPerSquarePerLayerCents: '/sq/layer',
-  underlaymentPerSquareCents: '/sq',
-  fieldShinglePerSquareCents: '/sq',
-  ridgeHipPerLfCents: '/lf',
-  valleyPerLfCents: '/lf',
-  flashingPerLfCents: '/lf',
-  penetrationEachCents: '/ea',
-  disposalPerSquareCents: '/sq',
+/** Rate names as they read on the Pricing page. Display only. */
+const RATE_LABEL: Record<TunableRateField, string> = {
+  tearOffPerSquarePerLayerCents: 'Tear-Off',
+  underlaymentPerSquareCents: 'Underlayment',
+  fieldShinglePerSquareCents: 'Field Shingles',
+  ridgeHipPerLfCents: 'Ridge & Hip Cap',
+  valleyPerLfCents: 'Valley',
+  flashingPerLfCents: 'Flashing',
+  penetrationEachCents: 'Penetrations',
+  disposalPerSquareCents: 'Disposal & Haul-Off',
+};
+
+/** How each rate is charged, spelled out. Display only — not money math. */
+const RATE_UNIT: Record<TunableRateField, string> = {
+  tearOffPerSquarePerLayerCents: 'per square, per layer',
+  underlaymentPerSquareCents: 'per square',
+  fieldShinglePerSquareCents: 'per square',
+  ridgeHipPerLfCents: 'per foot',
+  valleyPerLfCents: 'per foot',
+  flashingPerLfCents: 'per foot',
+  penetrationEachCents: 'each',
+  disposalPerSquareCents: 'per square',
 };
 
 function signedMoney(m: bigint): string {
   return m === 0n ? formatMoney(m) : formatMoney(m, { sign: true });
 }
 
-/** Positive gap = you were underpriced (margin lost) = bad. Negative = good. */
+/** Positive = you charged less than the work cost, so it's money out of your pocket. */
 function gapClass(m: bigint): string {
   if (m > 0n) return 'gap-bad';
   if (m < 0n) return 'gap-good';
@@ -49,17 +61,18 @@ export default function TuningPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <>
-      <div className="page-head">
-        <div>
+      <PageHead
+        above={
           <Link href="/models" className="crumb">
-            ← Price models
+            ← Pricing
           </Link>
-          <h1>Auto-tune</h1>
-          <div className="muted" style={{ fontSize: 13 }}>
-            Deterministic arithmetic on your own closed jobs only. Suggestions are never applied automatically.
-          </div>
-        </div>
-      </div>
+        }
+        title="Check My Rates"
+      />
+      <p className="why-line">
+        Rafter compared what you charged against what the work actually cost you on your finished
+        jobs. These are the rates that look off — nothing changes until you save.
+      </p>
 
       {error !== null && <Banner kind="error">{error}</Banner>}
 
@@ -90,18 +103,26 @@ function IneligiblePanel({ jobCount, minJobs }: { jobCount: number; minJobs: num
   const pct = progressPct(jobCount, minJobs);
   return (
     <div className="card card-pad" style={{ maxWidth: 560 }}>
-      <span className="section-label">Not enough history yet</span>
+      <span className="section-label">Not Enough Finished Jobs Yet</span>
       <p style={{ margin: '10px 0 6px', fontSize: 13 }}>
-        Auto-tune unlocks after {minJobs} closed jobs on this model.
+        Rafter needs <span className="mono">{minJobs}</span> finished jobs priced with these rates
+        before it can tell a real pattern from a one-off bad week.
       </p>
       <div className="mono" style={{ fontSize: 15, marginBottom: 8 }}>
         {jobCount} / {minJobs}
       </div>
-      <div className="tune-progress" role="progressbar" aria-valuenow={jobCount} aria-valuemin={0} aria-valuemax={minJobs}>
+      <div
+        className="tune-progress"
+        role="progressbar"
+        aria-valuenow={jobCount}
+        aria-valuemin={0}
+        aria-valuemax={minJobs}
+      >
         <div className="tune-progress-fill" style={{ width: `${pct}%` }} />
       </div>
       <p className="muted" style={{ fontSize: 12, marginTop: 12, marginBottom: 0 }}>
-        Deterministic arithmetic on your own closed jobs only. Suggestions are never applied automatically.
+        Every job you finish and close out counts toward this. Rafter never changes your prices on
+        its own.
       </p>
     </div>
   );
@@ -150,8 +171,8 @@ function EligibleView({ tuning, onAccepted }: { tuning: TuningResponse; onAccept
   if (acceptedVersion !== null) {
     return (
       <Banner kind="ok">
-        Version {acceptedVersion} created — issued quotes keep the version they were priced with (D3).{' '}
-        <Link href="/models">Back to price models</Link>
+        Saved as Version {acceptedVersion}. New quotes use these prices from now on — quotes you
+        already sent keep the prices you gave your customers. <Link href="/models">Back to Pricing</Link>
       </Banner>
     );
   }
@@ -160,26 +181,30 @@ function EligibleView({ tuning, onAccepted }: { tuning: TuningResponse; onAccept
     <>
       {conflict && (
         <Banner kind="error">
-          The model has a newer version than these suggestions were computed against.{' '}
+          Your prices changed since Rafter ran this check, so these suggestions are out of date.{' '}
           <button type="button" className="btn btn-small" onClick={onAccepted}>
-            Refresh suggestions
+            Check Again
           </button>
         </Banner>
       )}
       {error !== null && <Banner kind="error">{error}</Banner>}
 
       <section className="section">
-        <span className="section-label">Rate table</span>
+        <span className="section-label">Your Prices vs. What the Work Cost You</span>
+        <p className="muted" style={{ fontSize: 12, margin: '4px 0 0', maxWidth: 700 }}>
+          Tick the rates you want to fix. A rate with no suggestion is already close enough to what
+          it really costs you.
+        </p>
         <div className="card" style={{ marginTop: 8 }}>
           <table className="table">
             <thead>
               <tr>
                 <th style={{ width: 28 }} />
-                <th>Line</th>
-                <th className="num">Current rate</th>
-                <th className="num">Realized gap</th>
-                <th className="num">Suggested rate</th>
-                <th className="num">Annualized impact</th>
+                <th>Rate</th>
+                <th className="num">You Charge</th>
+                <th className="num">You&rsquo;re Off By</th>
+                <th className="num">Suggested Price</th>
+                <th className="num">Cost You per Year</th>
               </tr>
             </thead>
             <tbody>
@@ -190,32 +215,37 @@ function EligibleView({ tuning, onAccepted }: { tuning: TuningResponse; onAccept
           </table>
           <div className="tune-summary">
             <span>
-              <span className="section-label">Annualized impact</span>{' '}
-              <span className="mono" style={{ fontSize: 15, marginLeft: 8 }}>
+              <span className="section-label">The Ticked Rates Cost You per Year</span>{' '}
+              <span className={`mono ${gapClass(selectedImpact)}`} style={{ fontSize: 15, marginLeft: 8 }}>
                 {signedMoney(selectedImpact)}
               </span>
             </span>
             <span className="mono muted" style={{ fontSize: 12 }}>
-              {report.jobCount} closed jobs over {report.windowDays} days
+              Based on your last {report.jobCount} finished jobs
             </span>
           </div>
         </div>
       </section>
 
       <section className="section">
-        <span className="section-label">Replay — if these rates had priced your last {replay.length} quotes</span>
+        <span className="section-label">
+          What These Prices Would Have Done to Your Last {replay.length} Quotes
+        </span>
+        <p className="muted" style={{ fontSize: 12, margin: '4px 0 0', maxWidth: 700 }}>
+          These quotes are already out the door and won&rsquo;t change. This just shows how much
+          bigger or smaller they would have been.
+        </p>
         <div className="card" style={{ marginTop: 8 }}>
           {replay.length === 0 ? (
-            <div className="empty-state">No issued quotes to replay yet.</div>
+            <div className="empty-state">No quotes sent yet to compare against.</div>
           ) : (
             <table className="table">
               <thead>
                 <tr>
                   <th>Job</th>
-                  <th>Issued</th>
-                  <th className="num">Old total</th>
-                  <th className="num">New total</th>
-                  <th className="num">Delta</th>
+                  <th className="num">Quoted</th>
+                  <th className="num">Would Have Been</th>
+                  <th className="num">Difference</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,10 +265,10 @@ function EligibleView({ tuning, onAccepted }: { tuning: TuningResponse; onAccept
           disabled={busy || checked.size === 0}
           onClick={() => void accept()}
         >
-          {busy ? 'Creating…' : `Accept as v${baseVersion + 1}`}
+          {busy ? 'Saving…' : `Save These Prices as Version ${baseVersion + 1}`}
         </button>
         <span className="muted" style={{ fontSize: 12 }}>
-          Creates a new immutable version — never applied automatically (D3).
+          Only new quotes use them. Quotes you already sent keep the prices you gave your customers.
         </span>
       </div>
     </>
@@ -249,48 +279,47 @@ function RateRow({ row, checked, onToggle }: { row: TuningRateRow; checked: bool
   const gap = toMoney(row.perUnitGapCents);
   const impact = toMoney(row.annualizedImpactCents);
   const unchanged = row.suggestedRateCents === row.currentRateCents;
-  const suffix = RATE_SUFFIX[row.rateField];
+  const label = RATE_LABEL[row.rateField];
   return (
     <tr>
       <td>
         <input
           type="checkbox"
-          aria-label={`Include ${row.label}`}
+          aria-label={`Include ${label}`}
           checked={checked}
           disabled={unchanged}
           onChange={onToggle}
         />
       </td>
       <td>
-        {row.label}
-        <span className="rate-mult">{row.jobsTouched} jobs</span>
+        <div>{label}</div>
+        <div className="muted" style={{ fontSize: 11 }}>
+          {RATE_UNIT[row.rateField]} · <span className="mono">{row.jobsTouched}</span> jobs
+        </div>
       </td>
+      <td className="num mono">{formatMoney(toMoney(row.currentRateCents))}</td>
+      <td className={`num mono ${gapClass(gap)}`}>{signedMoney(gap)}</td>
       <td className="num mono">
-        {formatMoney(toMoney(row.currentRateCents))}
-        <span className="rate-mult">{suffix}</span>
+        {unchanged ? <span className="muted">Looks Right</span> : formatMoney(toMoney(row.suggestedRateCents))}
       </td>
-      <td className={`num mono ${gapClass(gap)}`}>
-        {signedMoney(gap)}
-        <span className="rate-mult">{suffix}</span>
-      </td>
-      <td className="num mono">
-        {unchanged ? <span className="muted">—</span> : formatMoney(toMoney(row.suggestedRateCents))}
-        {!unchanged && <span className="rate-mult">{suffix}</span>}
-      </td>
-      <td className="num mono">{signedMoney(impact)}</td>
+      <td className={`num mono ${gapClass(impact)}`}>{signedMoney(impact)}</td>
     </tr>
   );
 }
 
 function ReplayRow({ row }: { row: TuningReplayRow }) {
   const delta = toMoney(row.deltaCents);
-  // Positive delta = the tuned rates would have priced the job higher —
-  // margin recovered (good). Negative = would have charged less (bad).
+  // Positive delta = these prices would have quoted the job higher — money you
+  // left on the table. Negative = you would have quoted less.
   const cls = delta > 0n ? 'gap-good' : delta < 0n ? 'gap-bad' : 'muted';
   return (
     <tr>
-      <td>{row.jobName}</td>
-      <td className="muted">{fmtDate(row.issuedAt)}</td>
+      <td>
+        <div>{row.jobName}</div>
+        <div className="muted" style={{ fontSize: 11 }}>
+          Sent {fmtDate(row.issuedAt)}
+        </div>
+      </td>
       <td className="num mono">{formatMoney(toMoney(row.oldTotalCents))}</td>
       <td className="num mono">{formatMoney(toMoney(row.newTotalCents))}</td>
       <td className={`num mono ${cls}`}>{signedMoney(delta)}</td>
