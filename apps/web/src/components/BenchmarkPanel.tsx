@@ -5,112 +5,71 @@ import { formatBps, type BenchmarkResponse, type DashboardResponse } from '@raft
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { useTenant } from '@/lib/tenant';
-import { Chip, Skeleton } from './ui';
-
-const R = 52;
-const C = 2 * Math.PI * R;
+import { Skeleton } from './ui';
 
 /** Half a percent, in bps — inside this, they are level with the pool. */
 const PARITY_BAND_BPS = 50;
 
+/**
+ * One-line dashboard strip. The full story (why, the ring, breakdowns by
+ * size/pitch/layers/age) lives on /benchmark — this only says the one thing
+ * worth clicking for, so the two surfaces never repeat each other.
+ */
 export function BenchmarkPanel({ dash, loading }: { dash: DashboardResponse | null; loading: boolean }) {
   const { tenantId } = useTenant();
   const unlocked = dash?.benchmarkUnlocked === true;
-  // Only fetched once the gate is open — the locked panel needs nothing but the ring.
-  const bench = useApi(() => api.benchmark(), [tenantId], unlocked && tenantId !== null);
+  const bench = useApi(() => api.benchmark(), [tenantId], tenantId !== null);
 
   return (
-    <Link href="/benchmark" className="card bench bench-link">
+    <Link href="/benchmark" className="card bench bench-strip-row bench-link">
       <span className="section-label">How You Compare</span>
       {loading || dash === null ? (
-        <div style={{ marginTop: 14 }}>
-          <Skeleton h={128} w="100%" />
-        </div>
+        <Skeleton h={18} w="60%" />
       ) : unlocked ? (
-        <Unlocked bench={bench.data} />
+        <UnlockedLine bench={bench.data} />
       ) : (
-        <Locked bps={dash.closeoutCompletionBps} />
+        <LockedLine bps={dash.closeoutCompletionBps} remaining={bench.data?.remainingCount ?? null} />
       )}
+      <span className="bench-cta mono">→</span>
     </Link>
   );
 }
 
-function Locked({ bps }: { bps: number }) {
-  // Ring arc fraction — bps is a ratio, not money.
-  const frac = Math.max(0, Math.min(bps, 10000)) / 10000;
+function LockedLine({ bps, remaining }: { bps: number; remaining: number | null }) {
   return (
-    <div>
-      <svg className="bench-ring" viewBox="0 0 120 120" role="img" aria-label="Final costs entered">
-        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--line)" strokeWidth="8" />
-        <circle
-          cx="60"
-          cy="60"
-          r={R}
-          fill="none"
-          stroke="var(--copper)"
-          strokeWidth="8"
-          strokeDasharray={`${C * frac} ${C}`}
-          transform="rotate(-90 60 60)"
-        />
-        <text x="60" y="66" textAnchor="middle" className="ring-num">
-          {formatBps(bps)}
-        </text>
-      </svg>
-      <p className="bench-text">
-        Rot and bad decking you only find once the roof is open cost every roofer money. Enter final costs on
-        80% of your jobs and you can see what those surprises cost other roofers on work like yours.
-      </p>
-      <p className="bench-pct">You Are At {formatBps(bps)} — See What Is Left →</p>
-    </div>
+    <span className="bench-line">
+      Locked — final costs entered on <span className="mono">{formatBps(bps)}</span> of your jobs, opens at{' '}
+      <span className="mono">80%</span>.{' '}
+      <span className="bench-line-cta">
+        {remaining !== null && remaining > 0
+          ? `Wrap Up ${remaining} More ${remaining === 1 ? 'Job' : 'Jobs'}`
+          : 'See What Is Left'}
+      </span>
+    </span>
   );
 }
 
-/**
- * Unlocked strip: the one line worth clicking through for — their typical
- * surprise cost against the pool's. Falls back to the teaser until both
- * figures exist.
- */
-function Unlocked({ bench }: { bench: BenchmarkResponse | null }) {
+function UnlockedLine({ bench }: { bench: BenchmarkResponse | null }) {
   const poolBps = bench?.report?.overall.locked === false ? bench.report.overall.p50Bps : null;
   const mineBps = bench?.you?.medianBps ?? null;
   const deltaBps =
     mineBps === null || poolBps === null ? null : (bench?.you?.vsPoolBps ?? mineBps - poolBps);
 
+  if (deltaBps === null || mineBps === null || poolBps === null) {
+    return <span className="bench-line">Surprise costs on jobs like yours, from every roofer on Rafter.</span>;
+  }
+  const tone =
+    deltaBps > PARITY_BAND_BPS ? 'var(--bad)' : deltaBps < -PARITY_BAND_BPS ? 'var(--good)' : 'var(--asphalt)';
+  const verdict =
+    deltaBps > PARITY_BAND_BPS
+      ? 'you are carrying more than they are'
+      : deltaBps < -PARITY_BAND_BPS
+        ? 'you are running leaner'
+        : 'right in line';
   return (
-    <div>
-      <div style={{ margin: '12px 0 4px' }}>
-        <Chip tone="copper">Unlocked</Chip>
-      </div>
-      {deltaBps !== null && mineBps !== null && poolBps !== null ? (
-        <p className="bench-text" style={{ textAlign: 'left', flex: '1 1 320px' }}>
-          <span
-            style={{
-              color:
-                deltaBps > PARITY_BAND_BPS
-                  ? 'var(--bad)'
-                  : deltaBps < -PARITY_BAND_BPS
-                    ? 'var(--good)'
-                    : 'var(--asphalt)',
-            }}
-          >
-            Your typical job eats <span className="mono">{formatBps(mineBps)}</span> in surprise costs,
-            against <span className="mono">{formatBps(poolBps)}</span> for most roofers
-            {deltaBps > PARITY_BAND_BPS
-              ? ' — you are carrying more than they are.'
-              : deltaBps < -PARITY_BAND_BPS
-                ? ' — you are running leaner.'
-                : ' — right in line.'}
-          </span>
-        </p>
-      ) : (
-        <p className="bench-text" style={{ textAlign: 'left', flex: '1 1 320px' }}>
-          See what rot, bad decking and extra layers cost other roofers on jobs like yours — by roof size,
-          steepness, layers and age — and whether your prices carry enough cushion.
-        </p>
-      )}
-      <p className="bench-pct" style={{ textAlign: 'left' }}>
-        Open The Full Comparison →
-      </p>
-    </div>
+    <span className="bench-line" style={{ color: tone }}>
+      Surprise costs: your typical job <span className="mono">{formatBps(mineBps)}</span> vs{' '}
+      <span className="mono">{formatBps(poolBps)}</span> for most roofers — {verdict}.
+    </span>
   );
 }

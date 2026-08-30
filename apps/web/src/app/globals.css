@@ -770,6 +770,44 @@ a:hover {
   border-radius: 1px;
 }
 
+
+/* One-line strip: label · verdict · arrow, on a single row. */
+.bench-strip .bench.bench-strip-row,
+.bench.bench-strip-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.bench.bench-strip-row .section-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.bench-line {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--asphalt);
+}
+
+.bench-line .mono {
+  font-family: var(--font-mono), Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.bench-line-cta {
+  color: var(--copper);
+  font-weight: 600;
+}
+
+.bench-cta {
+  flex: 0 0 auto;
+  color: var(--copper);
+  font-size: 15px;
+}
+
 /* Full-width strip beneath the board (was a 264px right rail). */
 .bench-strip {
   margin-top: 22px;
